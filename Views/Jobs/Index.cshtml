@@ -1,0 +1,204 @@
+@model IEnumerable<JobExchangeMvc.Models.Job>
+@inject JobExchangeMvc.Data.ApplicationDbContext _context
+
+@{
+    ViewData["Title"] = "Tìm việc làm";
+    var categories = _context.Categories.Where(c => c.IsActive).ToList();
+}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-search"></i> Tìm kiếm việc làm</h2>
+        <p class="text-muted">Khám phá hàng nghìn cơ hội việc làm hấp dẫn</p>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="Index" method="get" id="searchForm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-search"></i> Từ khóa
+                    </label>
+                    <input type="text" name="keyword" class="form-control" placeholder="Tìm kiếm theo tiêu đề, kỹ năng..." value="@ViewBag.Keyword">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <i class="fas fa-map-marker-alt"></i> Địa điểm
+                    </label>
+                    <input type="text" name="location" class="form-control" placeholder="Hà Nội, TP.HCM..." value="@ViewBag.Location">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <i class="fas fa-th-large"></i> Ngành nghề
+                    </label>
+                    <select name="categoryId" class="form-select">
+                        <option value="">Tất cả ngành nghề</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id" selected="@(ViewBag.CategoryId == category.Id)">@category.Name</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>
+                @if (Model.Any())
+                {
+                    <span>Tìm thấy <strong>@Model.Count()</strong> việc làm</span>
+                }
+                else
+                {
+                    <span>Không tìm thấy việc làm phù hợp</span>
+                }
+            </h5>
+            
+            @if (User.IsInRole("Employer"))
+            {
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Đăng tin tuyển dụng
+                </a>
+            }
+        </div>
+        
+        <div id="jobsList">
+            @if (Model.Any())
+            {
+                @foreach (var job in Model)
+                {
+                    <div class="card job-card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <h5 class="card-title">
+                                        <a asp-action="Details" asp-route-id="@job.Id" class="text-decoration-none text-dark">
+                                            @job.Title
+                                        </a>
+                                        @if (job.Status == "Approved")
+                                        {
+                                            <span class="badge bg-success ms-2">Đang tuyển</span>
+                                        }
+                                    </h5>
+                                    
+                                    <h6 class="text-primary mb-2">
+                                        <i class="fas fa-building"></i> @job.Company.Name
+                                    </h6>
+                                    
+                                    <div class="mb-2">
+                                        <span class="badge bg-light text-dark me-2">
+                                            <i class="fas fa-map-marker-alt"></i> @job.Location
+                                        </span>
+                                        <span class="badge bg-light text-dark me-2">
+                                            <i class="fas fa-briefcase"></i> @job.JobType
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(job.SalaryRange))
+                                        {
+                                            <span class="badge bg-success me-2">
+                                                <i class="fas fa-dollar-sign"></i> @job.SalaryRange
+                                            </span>
+                                        }
+                                        <span class="badge bg-info text-dark">
+                                            <i class="fas fa-tag"></i> @job.Category.Name
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="card-text text-muted mb-2">
+                                        @(job.Description.Length > 200 ? job.Description.Substring(0, 200) + "..." : job.Description)
+                                    </p>
+                                    
+                                    <small class="text-muted">
+                                        <i class="far fa-clock"></i> Đăng ngày @job.CreatedAt.ToString("dd/MM/yyyy")
+                                        @if (job.ApplicationDeadline.HasValue)
+                                        {
+                                            <span class="ms-3">
+                                                <i class="far fa-calendar-times"></i> Hạn nộp: @job.ApplicationDeadline.Value.ToString("dd/MM/yyyy")
+                                            </span>
+                                        }
+                                        <span class="ms-3">
+                                            <i class="far fa-eye"></i> @job.ViewCount lượt xem
+                                        </span>
+                                    </small>
+                                </div>
+                                
+                                <div class="col-md-3 d-flex flex-column justify-content-center align-items-end">
+                                    @if (!string.IsNullOrEmpty(job.Company.LogoUrl))
+                                    {
+                                        <img src="@job.Company.LogoUrl" alt="Logo" class="company-logo mb-3" style="width: 80px; height: 80px; object-fit: contain;">
+                                    }
+                                    
+                                    <a asp-action="Details" asp-route-id="@job.Id" class="btn btn-primary">
+                                        Xem chi tiết <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h5>Không tìm thấy việc làm phù hợp</h5>
+                    <p class="mb-0">Thử thay đổi tiêu chí tìm kiếm hoặc <a asp-action="Index">xem tất cả việc làm</a></p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // AJAX search on form change
+            let searchTimeout;
+            $('#searchForm input, #searchForm select').on('change keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    performSearch();
+                }, 500);
+            });
+            
+            function performSearch() {
+                const formData = $('#searchForm').serialize();
+                $.get('@Url.Action("SearchPartial", "Jobs")?' + formData, function(data) {
+                    $('#jobsList').html(data);
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+    .job-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .job-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+    
+    .company-logo {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px;
+    }
+</style>

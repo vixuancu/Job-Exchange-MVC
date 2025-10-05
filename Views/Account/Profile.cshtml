@@ -1,0 +1,167 @@
+@model JobExchangeMvc.DTOs.ProfileDto
+
+@{
+    ViewData["Title"] = "Hồ sơ cá nhân";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                {
+                    <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                }
+                else
+                {
+                    <div class="avatar-placeholder mb-3">
+                        <i class="fas fa-user-circle fa-8x text-muted"></i>
+                    </div>
+                }
+                <h5>@Model.FullName</h5>
+                <p class="text-muted">@Model.Role</p>
+                <span class="badge bg-success">
+                    <i class="fas fa-check-circle"></i> Đang hoạt động
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit"></i> Chỉnh sửa hồ sơ
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Profile" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input asp-for="Email" class="form-control" readonly />
+                            <div class="form-text">Email không thể thay đổi</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label">
+                                <i class="fas fa-user"></i> Họ và tên <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FullName" class="form-control" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="form-label">
+                            <i class="fas fa-phone"></i> Số điện thoại
+                        </label>
+                        <input asp-for="PhoneNumber" class="form-control" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Bio" class="form-label">
+                            <i class="fas fa-info-circle"></i> Giới thiệu bản thân
+                        </label>
+                        <textarea asp-for="Bio" class="form-control" rows="4" placeholder="Giới thiệu ngắn gọn về bản thân..."></textarea>
+                        <span asp-validation-for="Bio" class="text-danger"></span>
+                    </div>
+                    
+                    @if (User.IsInRole("Applicant"))
+                    {
+                        <div class="mb-3">
+                            <label asp-for="Skills" class="form-label">
+                                <i class="fas fa-code"></i> Kỹ năng
+                            </label>
+                            <input asp-for="Skills" class="form-control" placeholder="C#, ASP.NET Core, SQL, JavaScript..." />
+                            <span asp-validation-for="Skills" class="text-danger"></span>
+                            <div class="form-text">Các kỹ năng cách nhau bởi dấu phẩy</div>
+                        </div>
+                    }
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="fas fa-image"></i> Ảnh đại diện
+                            </label>
+                            <input type="file" name="avatarFile" class="form-control" accept="image/*" id="avatarInput" />
+                            <div class="form-text">Định dạng: JPG, PNG. Tối đa 2MB</div>
+                            <img id="avatarPreview" src="#" alt="Preview" class="mt-2" style="max-width: 200px; display: none;">
+                        </div>
+                        
+                        @if (User.IsInRole("Applicant"))
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-file-pdf"></i> CV của bạn
+                                </label>
+                                <input type="file" name="cvFile" class="form-control" accept=".pdf,.doc,.docx" id="cvInput" />
+                                <div class="form-text">Định dạng: PDF, DOC, DOCX. Tối đa 5MB</div>
+                                @if (!string.IsNullOrEmpty(Model.CvUrl))
+                                {
+                                    <div class="mt-2">
+                                        <a href="@Model.CvUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i> Xem CV hiện tại
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3"><i class="fas fa-key"></i> Thay đổi mật khẩu (tùy chọn)</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="CurrentPassword" class="form-label">Mật khẩu hiện tại</label>
+                            <input asp-for="CurrentPassword" class="form-control" />
+                            <span asp-validation-for="CurrentPassword" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label asp-for="NewPassword" class="form-label">Mật khẩu mới</label>
+                            <input asp-for="NewPassword" class="form-control" />
+                            <span asp-validation-for="NewPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Preview avatar
+        document.getElementById('avatarInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('avatarPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}

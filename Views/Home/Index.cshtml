@@ -1,0 +1,164 @@
+﻿@model IEnumerable<JobExchangeMvc.DTOs.JobDto>
+
+@{
+    ViewData["Title"] = "Trang chủ";
+    ViewData["ContainerClass"] = "";
+}
+
+<!-- Hero Section -->
+<section class="bg-primary text-white py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-5 fw-bold mb-3">Sàn Giao Dịch Việc Làm</h1>
+                <p class="lead mb-4">Kết nối nhà tuyển dụng và ứng viên</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        @if (User.IsInRole("Applicant"))
+                        {
+                            <a asp-controller="Jobs" asp-action="Index" class="btn btn-light btn-lg">
+                                <i class="fas fa-search"></i> Tìm việc làm
+                            </a>
+                        }
+                        else if (User.IsInRole("Employer"))
+                        {
+                            <a asp-controller="Jobs" asp-action="Create" class="btn btn-light btn-lg">
+                                <i class="fas fa-plus"></i> Đăng tin tuyển dụng
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg">
+                            Đăng ký
+                        </a>
+                        <a asp-controller="Jobs" asp-action="Index" class="btn btn-outline-light btn-lg">
+                            Tìm việc làm
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-6 col-md-3">
+                <i class="fas fa-briefcase fa-2x text-primary mb-2"></i>
+                <h4 class="fw-bold mb-0">@Model.Count()</h4>
+                <small class="text-muted">Việc làm</small>
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="fas fa-building fa-2x text-success mb-2"></i>
+                <h4 class="fw-bold mb-0">@Model.Select(j => j.CompanyName).Distinct().Count()</h4>
+                <small class="text-muted">Công ty</small>
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="fas fa-users fa-2x text-info mb-2"></i>
+                <h4 class="fw-bold mb-0">@ViewBag.Categories.Count</h4>
+                <small class="text-muted">Danh mục</small>
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="fas fa-user-check fa-2x text-warning mb-2"></i>
+                <h4 class="fw-bold mb-0">1000+</h4>
+                <small class="text-muted">Ứng viên</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Latest Jobs -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">Tin tuyển dụng mới nhất</h3>
+            <a asp-controller="Jobs" asp-action="Index" class="btn btn-primary">
+                Xem tất cả
+            </a>
+        </div>
+
+        @if (Model.Any())
+        {
+            <div class="row g-3">
+                @foreach (var job in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 hover-shadow">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0 flex-grow-1">
+                                        <a asp-controller="Jobs" asp-action="Details" asp-route-id="@job.Id">
+                                            @job.Title
+                                        </a>
+                                    </h6>
+                                    <span class="badge bg-success ms-2">@job.Status</span>
+                                </div>
+                                
+                                <p class="text-muted mb-2 small">
+                                    <i class="fas fa-building"></i> @job.CompanyName
+                                </p>
+                                
+                                <div class="mb-2 small">
+                                    <span class="badge bg-primary me-1">@job.CategoryName</span>
+                                    <span class="badge bg-info">@job.JobType</span>
+                                </div>
+                                
+                                <p class="mb-1 small">
+                                    <i class="fas fa-map-marker-alt text-danger"></i> @job.Location
+                                </p>
+                                
+                                <p class="mb-2 small">
+                                    <i class="fas fa-money-bill-wave text-success"></i> @job.SalaryRange
+                                </p>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> @job.ApplicationDeadline?.ToShortDateString()
+                                    </small>
+                                    <a asp-controller="Jobs" asp-action="Details" asp-route-id="@job.Id" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        Chi tiết
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Chưa có việc làm nào</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h3 class="fw-bold text-center mb-4">Danh mục nghề nghiệp</h3>
+        <div class="row g-3">
+            @foreach (var category in ViewBag.Categories)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a asp-controller="Jobs" asp-action="Index" asp-route-categoryId="@category.Id" 
+                       class="text-decoration-none">
+                        <div class="card text-center h-100 hover-shadow">
+                            <div class="card-body py-3">
+                                <i class="fas fa-folder text-primary mb-2"></i>
+                                <h6 class="mb-0 small">@category.Name</h6>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</section>

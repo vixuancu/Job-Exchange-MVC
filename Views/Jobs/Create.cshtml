@@ -1,0 +1,151 @@
+@model JobExchangeMvc.DTOs.JobDto
+@inject JobExchangeMvc.Data.ApplicationDbContext _context
+
+@{
+    ViewData["Title"] = "Đăng tin tuyển dụng";
+    var categories = _context.Categories.Where(c => c.IsActive).ToList();
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Đăng tin tuyển dụng mới</h4>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <h5 class="mb-3 text-primary"><i class="fas fa-info-circle"></i> Thông tin cơ bản</h5>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">
+                            Tiêu đề công việc <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Title" class="form-control" placeholder="Ví dụ: Senior .NET Developer" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="CategoryId" class="form-label">
+                                Ngành nghề <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="CategoryId" class="form-select">
+                                <option value="">-- Chọn ngành nghề --</option>
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="JobType" class="form-label">
+                                Loại hình công việc
+                            </label>
+                            <select asp-for="JobType" class="form-select">
+                                <option value="Full-time">Full-time</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Remote">Remote</option>
+                                <option value="Freelance">Freelance</option>
+                                <option value="Internship">Internship</option>
+                            </select>
+                            <span asp-validation-for="JobType" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Location" class="form-label">
+                                Địa điểm làm việc
+                            </label>
+                            <input asp-for="Location" class="form-control" placeholder="Hà Nội, TP.HCM..." />
+                            <span asp-validation-for="Location" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="SalaryRange" class="form-label">
+                                Mức lương
+                            </label>
+                            <input asp-for="SalaryRange" class="form-control" placeholder="15-20 triệu, Thỏa thuận..." />
+                            <span asp-validation-for="SalaryRange" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NumberOfPositions" class="form-label">
+                                Số lượng tuyển
+                            </label>
+                            <input asp-for="NumberOfPositions" class="form-control" type="number" min="1" />
+                            <span asp-validation-for="NumberOfPositions" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ApplicationDeadline" class="form-label">
+                                Hạn nộp hồ sơ
+                            </label>
+                            <input asp-for="ApplicationDeadline" class="form-control" type="date" />
+                            <span asp-validation-for="ApplicationDeadline" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3 text-primary"><i class="fas fa-file-alt"></i> Mô tả chi tiết</h5>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">
+                            Mô tả công việc <span class="text-danger">*</span>
+                        </label>
+                        <textarea asp-for="Description" class="form-control" rows="6" placeholder="Mô tả chi tiết về công việc..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Requirements" class="form-label">
+                            Yêu cầu công việc
+                        </label>
+                        <textarea asp-for="Requirements" class="form-control" rows="6" placeholder="Liệt kê các yêu cầu về kinh nghiệm, kỹ năng..."></textarea>
+                        <span asp-validation-for="Requirements" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Benefits" class="form-label">
+                            Quyền lợi
+                        </label>
+                        <textarea asp-for="Benefits" class="form-control" rows="4" placeholder="Mô tả các quyền lợi, phúc lợi của công ty..."></textarea>
+                        <span asp-validation-for="Benefits" class="text-danger"></span>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> 
+                        Tin tuyển dụng sẽ được admin duyệt trước khi hiển thị công khai. Bạn sẽ nhận được thông báo khi tin được duyệt.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="MyJobs" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-paper-plane"></i> Đăng tin tuyển dụng
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Set minimum date to today
+        document.querySelector('input[type="date"]').min = new Date().toISOString().split('T')[0];
+    </script>
+}

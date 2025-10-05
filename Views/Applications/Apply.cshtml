@@ -1,0 +1,86 @@
+@model JobExchangeMvc.DTOs.ApplicationDto
+
+@{
+    ViewData["Title"] = "Ứng tuyển - " + ViewBag.JobTitle;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-paper-plane"></i> Ứng tuyển công việc</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-briefcase"></i> @ViewBag.JobTitle
+                    </h5>
+                    <p class="mb-0">
+                        <i class="fas fa-building"></i> <strong>@ViewBag.CompanyName</strong>
+                    </p>
+                </div>
+                
+                <form asp-action="Apply" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="JobId" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <div class="mb-4">
+                        <label asp-for="CoverLetter" class="form-label">
+                            <i class="fas fa-envelope-open-text"></i> Thư xin việc
+                        </label>
+                        <textarea asp-for="CoverLetter" class="form-control" rows="8" 
+                                  placeholder="Giới thiệu bản thân và lý do bạn phù hợp với vị trí này..."></textarea>
+                        <span asp-validation-for="CoverLetter" class="text-danger"></span>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb"></i> Hãy viết một thư xin việc chuyên nghiệp và thể hiện sự nhiệt huyết của bạn với công việc.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-file-pdf"></i> CV của bạn <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" name="cvFile" class="form-control" accept=".pdf,.doc,.docx" required />
+                        <div class="form-text">
+                            Định dạng: PDF, DOC, DOCX. Tối đa 5MB
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Lưu ý:</strong> Sau khi ứng tuyển, bạn có thể theo dõi trạng thái đơn trong phần "Đơn ứng tuyển của tôi".
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-controller="Jobs" asp-action="Details" asp-route-id="@Model.JobId" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Hủy
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-paper-plane"></i> Gửi hồ sơ ứng tuyển
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-tips"></i> Mẹo ứng tuyển hiệu quả</h6>
+                    <ul class="mb-0">
+                        <li>Đọc kỹ mô tả công việc và yêu cầu</li>
+                        <li>Tùy chỉnh CV và thư xin việc phù hợp với vị trí</li>
+                        <li>Làm nổi bật kinh nghiệm và kỹ năng liên quan</li>
+                        <li>Kiểm tra lỗi chính tả trước khi gửi</li>
+                        <li>Thể hiện sự nhiệt huyết và chuyên nghiệp</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

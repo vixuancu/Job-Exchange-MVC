@@ -1,0 +1,197 @@
+@model JobExchangeMvc.Models.Job
+
+@{
+    ViewData["Title"] = Model.Title;
+    var canApply = User.IsInRole("Applicant") && 
+                   Model.Status == "Approved" && 
+                   Model.IsActive && 
+                   (!Model.ApplicationDeadline.HasValue || Model.ApplicationDeadline.Value > DateTime.Now);
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h2 class="mb-2">@Model.Title</h2>
+                        <h5 class="text-primary">
+                            <i class="fas fa-building"></i> @Model.Company.Name
+                        </h5>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Company.LogoUrl))
+                    {
+                        <img src="@Model.Company.LogoUrl" alt="Logo" class="company-logo" style="width: 100px; height: 100px; object-fit: contain;">
+                    }
+                </div>
+                
+                <div class="mb-4">
+                    <span class="badge bg-light text-dark me-2 p-2">
+                        <i class="fas fa-map-marker-alt"></i> @Model.Location
+                    </span>
+                    <span class="badge bg-light text-dark me-2 p-2">
+                        <i class="fas fa-briefcase"></i> @Model.JobType
+                    </span>
+                    @if (!string.IsNullOrEmpty(Model.SalaryRange))
+                    {
+                        <span class="badge bg-success me-2 p-2">
+                            <i class="fas fa-dollar-sign"></i> @Model.SalaryRange
+                        </span>
+                    }
+                    <span class="badge bg-info text-dark p-2">
+                        <i class="fas fa-tag"></i> @Model.Category.Name
+                    </span>
+                </div>
+                
+                <hr>
+                
+                <h5 class="mb-3"><i class="fas fa-file-alt"></i> Mô tả công việc</h5>
+                <div class="job-description mb-4">
+                    @Html.Raw(Model.Description.Replace("\n", "<br>"))
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Requirements))
+                {
+                    <h5 class="mb-3"><i class="fas fa-check-square"></i> Yêu cầu công việc</h5>
+                    <div class="job-requirements mb-4">
+                        @Html.Raw(Model.Requirements.Replace("\n", "<br>"))
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Benefits))
+                {
+                    <h5 class="mb-3"><i class="fas fa-gift"></i> Quyền lợi</h5>
+                    <div class="job-benefits mb-4">
+                        @Html.Raw(Model.Benefits.Replace("\n", "<br>"))
+                    </div>
+                }
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-users"></i> Số lượng tuyển</h6>
+                        <p>@(Model.NumberOfPositions.HasValue ? Model.NumberOfPositions.Value + " người" : "Không giới hạn")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="far fa-calendar-times"></i> Hạn nộp hồ sơ</h6>
+                        <p>@(Model.ApplicationDeadline.HasValue ? Model.ApplicationDeadline.Value.ToString("dd/MM/yyyy") : "Không giới hạn")</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">
+                            <i class="far fa-clock"></i> Đăng ngày @Model.CreatedAt.ToString("dd/MM/yyyy")
+                        </small>
+                        <small class="text-muted ms-3">
+                            <i class="far fa-eye"></i> @Model.ViewCount lượt xem
+                        </small>
+                    </div>
+                    
+                    @if (canApply)
+                    {
+                        <a asp-controller="Applications" asp-action="Apply" asp-route-jobId="@Model.Id" class="btn btn-success btn-lg">
+                            <i class="fas fa-paper-plane"></i> Ứng tuyển ngay
+                        </a>
+                    }
+                    else if (User.IsInRole("Employer") && Model.Company.EmployerId.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                    {
+                        <div>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Chỉnh sửa
+                            </a>
+                            <a asp-action="Applicants" asp-route-id="@Model.Id" class="btn btn-info">
+                                <i class="fas fa-users"></i> Xem ứng viên
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Company Info -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-building"></i> Thông tin công ty</h5>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.Company.LogoUrl))
+                {
+                    <div class="text-center mb-3">
+                        <img src="@Model.Company.LogoUrl" alt="Logo" class="img-fluid" style="max-height: 120px;">
+                    </div>
+                }
+                
+                <h5 class="mb-3">@Model.Company.Name</h5>
+                
+                @if (!string.IsNullOrEmpty(Model.Company.Description))
+                {
+                    <p class="text-muted">@Model.Company.Description</p>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Company.Address))
+                {
+                    <p class="mb-2">
+                        <i class="fas fa-map-marker-alt text-primary"></i>
+                        <strong>Địa chỉ:</strong><br>
+                        @Model.Company.Address
+                        @if (!string.IsNullOrEmpty(Model.Company.City))
+                        {
+                            <br>@Model.Company.City
+                        }
+                    </p>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Company.Website))
+                {
+                    <p class="mb-0">
+                        <i class="fas fa-globe text-primary"></i>
+                        <strong>Website:</strong><br>
+                        <a href="@Model.Company.Website" target="_blank">@Model.Company.Website</a>
+                    </p>
+                }
+            </div>
+        </div>
+        
+        <!-- Share -->
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="mb-3"><i class="fas fa-share-alt"></i> Chia sẻ tin này</h6>
+                <div class="d-grid gap-2">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Url.Action("Details", "Jobs", new { id = Model.Id }, Context.Request.Scheme)" target="_blank" class="btn btn-primary">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Url.Action("Details", "Jobs", new { id = Model.Id }, Context.Request.Scheme)" target="_blank" class="btn btn-info">
+                        <i class="fab fa-linkedin"></i> LinkedIn
+                    </a>
+                    <a href="mailto:?subject=@Model.Title&body=Xem tin tuyển dụng: @Url.Action("Details", "Jobs", new { id = Model.Id }, Context.Request.Scheme)" class="btn btn-secondary">
+                        <i class="fas fa-envelope"></i> Email
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 text-center">
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+    </a>
+</div>
+
+<style>
+    .company-logo {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px;
+    }
+    
+    .job-description, .job-requirements, .job-benefits {
+        line-height: 1.8;
+    }
+</style>

@@ -1,0 +1,185 @@
+@model IEnumerable<JobExchangeMvc.Models.Application>
+
+@{
+    ViewData["Title"] = "Đơn ứng tuyển của tôi";
+}
+
+<div class="mb-4">
+    <h2><i class="fas fa-file-alt"></i> Đơn ứng tuyển của tôi</h2>
+    <p class="text-muted">Quản lý và theo dõi trạng thái các đơn ứng tuyển</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h3 class="text-primary">@Model.Count()</h3>
+                <p class="mb-0">Tổng đơn ứng tuyển</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h3 class="text-warning">@Model.Count(a => a.Status == "Pending")</h3>
+                <p class="mb-0">Đang chờ</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h3 class="text-success">@Model.Count(a => a.Status == "Accepted")</h3>
+                <p class="mb-0">Được chấp nhận</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <h3 class="text-danger">@Model.Count(a => a.Status == "Rejected")</h3>
+                <p class="mb-0">Bị từ chối</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Applications List -->
+@if (Model.Any())
+{
+    @foreach (var application in Model.OrderByDescending(a => a.AppliedAt))
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="card-title">
+                            <a asp-controller="Jobs" asp-action="Details" asp-route-id="@application.JobId" class="text-decoration-none text-dark">
+                                @application.Job.Title
+                            </a>
+                        </h5>
+                        
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-building"></i> @application.Job.Company.Name
+                        </h6>
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="fas fa-map-marker-alt"></i> @application.Job.Location
+                            </span>
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="fas fa-briefcase"></i> @application.Job.JobType
+                            </span>
+                            @if (!string.IsNullOrEmpty(application.Job.SalaryRange))
+                            {
+                                <span class="badge bg-success">
+                                    <i class="fas fa-dollar-sign"></i> @application.Job.SalaryRange
+                                </span>
+                            }
+                        </div>
+                        
+                        <small class="text-muted">
+                            <i class="far fa-clock"></i> Ứng tuyển ngày @application.AppliedAt.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                        
+                        @if (application.ReviewedAt.HasValue)
+                        {
+                            <br>
+                            <small class="text-muted">
+                                <i class="far fa-calendar-check"></i> Xét duyệt ngày @application.ReviewedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            </small>
+                        }
+                    </div>
+                    
+                    <div class="col-md-4 d-flex flex-column justify-content-center align-items-end">
+                        <div class="mb-3">
+                            @switch (application.Status)
+                            {
+                                case "Pending":
+                                    <span class="badge bg-warning p-2" style="font-size: 1rem;">
+                                        <i class="fas fa-clock"></i> Đang chờ xét duyệt
+                                    </span>
+                                    break;
+                                case "Accepted":
+                                    <span class="badge bg-success p-2" style="font-size: 1rem;">
+                                        <i class="fas fa-check-circle"></i> Đã chấp nhận
+                                    </span>
+                                    break;
+                                case "Rejected":
+                                    <span class="badge bg-danger p-2" style="font-size: 1rem;">
+                                        <i class="fas fa-times-circle"></i> Đã từ chối
+                                    </span>
+                                    break;
+                                case "Cancelled":
+                                    <span class="badge bg-secondary p-2" style="font-size: 1rem;">
+                                        <i class="fas fa-ban"></i> Đã hủy
+                                    </span>
+                                    break;
+                            }
+                        </div>
+                        
+                        <div class="btn-group">
+                            <a asp-action="Details" asp-route-id="@application.Id" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Chi tiết
+                            </a>
+                            @if (application.Status == "Pending")
+                            {
+                                <button type="button" class="btn btn-sm btn-danger" onclick="cancelApplication(@application.Id)">
+                                    <i class="fas fa-times"></i> Hủy
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(application.Note))
+                {
+                    <hr>
+                    <div class="alert alert-info mb-0" role="alert">
+                        <strong><i class="fas fa-comment"></i> Ghi chú từ nhà tuyển dụng:</strong>
+                        <p class="mb-0 mt-2">@application.Note</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="alert alert-info text-center" role="alert">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <h5>Bạn chưa ứng tuyển công việc nào</h5>
+        <p>Hãy tìm kiếm và ứng tuyển ngay để không bỏ lỡ cơ hội!</p>
+        <a asp-controller="Jobs" asp-action="Index" class="btn btn-primary">
+            <i class="fas fa-search"></i> Tìm việc làm
+        </a>
+    </div>
+}
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        function cancelApplication(applicationId) {
+            if (confirm('Bạn có chắc chắn muốn hủy đơn ứng tuyển này?')) {
+                $.ajax({
+                    url: '@Url.Action("Cancel", "Applications")/' + applicationId,
+                    type: 'POST',
+                    data: {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
+                        }
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra. Vui lòng thử lại!');
+                    }
+                });
+            }
+        }
+    </script>
+}
