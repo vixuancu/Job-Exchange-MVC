@@ -125,9 +125,14 @@
                             </thead>
                             <tbody>
                                 @{
-                                    var totalJobs = stats.JobsByCategory.Sum((Func<dynamic, int>)(x => x.Count));
+                                    var jobsByCategoryList = ((IEnumerable<dynamic>)stats.JobsByCategory).ToList();
+                                    var totalJobs = 0;
+                                    foreach (var cat in jobsByCategoryList)
+                                    {
+                                        totalJobs += (int)cat.Count;
+                                    }
                                 }
-                                @foreach (var item in stats.JobsByCategory)
+                                @foreach (var item in jobsByCategoryList)
                                 {
                                     var percentage = totalJobs > 0 ? (item.Count * 100.0 / totalJobs) : 0;
                                     <tr>

@@ -15,4 +15,11 @@ public interface IJobService
     Task<bool> UpdateJobStatusAsync(int jobId, string status);
     Task<bool> IncrementViewCountAsync(int jobId);
     Task<IEnumerable<Category>> GetAllCategoriesAsync();
+    Task<IEnumerable<Category>> GetAllCategoriesForAdminAsync();
+
+    // Category management
+    Task<Category?> GetCategoryByIdAsync(int id);
+    Task<Category> CreateCategoryAsync(string name, string? description);
+    Task<bool> UpdateCategoryAsync(int id, string name, string? description, bool isActive);
+    Task<bool> ToggleCategoryStatusAsync(int id, bool isActive);
 }

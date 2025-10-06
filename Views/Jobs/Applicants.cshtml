@@ -1,0 +1,229 @@
+@model IEnumerable<JobExchangeMvc.DTOs.ApplicationDto>
+
+@{
+    ViewData["Title"] = "Danh sách ứng viên";
+    var job = ViewBag.Job as JobExchangeMvc.DTOs.JobDto;
+}
+
+<div class="mb-4">
+    <a asp-action="MyJobs" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Quay lại danh sách tin
+    </a>
+</div>
+
+<!-- Job Info Card -->
+@if (job != null)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2">
+                        <i class="fas fa-briefcase text-primary"></i> @job.Title
+                    </h4>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-building"></i> @job.CompanyName
+                        <span class="ms-3">
+                            <i class="fas fa-map-marker-alt"></i> @job.Location
+                        </span>
+                        <span class="ms-3">
+                            <i class="far fa-clock"></i> Đăng ngày @job.CreatedAt?.ToString("dd/MM/yyyy")
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-inline-block">
+                        <div class="badge bg-info text-white fs-5 p-3">
+                            <i class="fas fa-users"></i> @Model.Count() ứng viên
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Applicants List -->
+@if (Model.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-user-tie"></i> Danh sách ứng viên
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ứng viên</th>
+                            <th>Thư xin việc</th>
+                            <th>Ngày nộp</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var application in Model.OrderByDescending(a => a.AppliedAt))
+                        {
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>
+                                            <i class="fas fa-user"></i> @application.ApplicantName
+                                        </strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="far fa-envelope"></i> @application.ApplicantEmail
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(application.CoverLetter))
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                data-bs-toggle="modal" data-bs-target="#coverLetterModal-@application.Id">
+                                            <i class="fas fa-eye"></i> Xem thư
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Không có</span>
+                                    }
+                                </td>
+                                <td>
+                                    <i class="far fa-calendar"></i> @application.AppliedAt?.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+                                <td>
+                                    @switch (application.Status)
+                                    {
+                                        case "Pending":
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock"></i> Chờ xét duyệt
+                                            </span>
+                                            break;
+                                        case "Approved":
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Đã duyệt
+                                            </span>
+                                            break;
+                                        case "Rejected":
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle"></i> Từ chối
+                                            </span>
+                                            break;
+                                        case "Interviewing":
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-handshake"></i> Đang phỏng vấn
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        @if (!string.IsNullOrWhiteSpace(application.CvUrl))
+                                        {
+                                            <a href="@application.CvUrl" target="_blank" class="btn btn-sm btn-primary" title="Xem CV">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        }
+                                        
+                                        @if (application.Status == "Pending")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-success" 
+                                                    onclick="updateStatus(@application.Id, 'Approved')" title="Duyệt">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Từ chối">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        }
+                                        
+                                        @if (application.Status == "Approved")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-info" 
+                                                    onclick="updateStatus(@application.Id, 'Interviewing')" title="Mời phỏng vấn">
+                                                <i class="fas fa-handshake"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Cover Letter Modal -->
+                            @if (!string.IsNullOrWhiteSpace(application.CoverLetter))
+                            {
+                                <div class="modal fade" id="coverLetterModal-@application.Id" tabindex="-1" 
+                                     aria-labelledby="coverLetterModalLabel-@application.Id" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="coverLetterModalLabel-@application.Id">
+                                                    <i class="fas fa-envelope-open-text"></i> Thư xin việc - @application.ApplicantName
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p style="white-space: pre-wrap;">@application.CoverLetter</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info text-center" role="alert">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <h5>Chưa có ứng viên nào nộp hồ sơ</h5>
+        <p>Tin tuyển dụng này chưa nhận được hồ sơ ứng tuyển nào.</p>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function updateStatus(applicationId, status) {
+            let confirmMessage = '';
+            switch(status) {
+                case 'Approved':
+                    confirmMessage = 'Bạn có chắc chắn muốn duyệt hồ sơ này?';
+                    break;
+                case 'Rejected':
+                    confirmMessage = 'Bạn có chắc chắn muốn từ chối hồ sơ này?';
+                    break;
+                case 'Interviewing':
+                    confirmMessage = 'Bạn có chắc chắn muốn mời ứng viên phỏng vấn?';
+                    break;
+            }
+
+            if (confirm(confirmMessage)) {
+                $.ajax({
+                    url: '/Applications/UpdateStatus',
+                    type: 'POST',
+                    data: {
+                        id: applicationId,
+                        status: status,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        location.reload();
+                    },
+                    error: function() {
+                        alert('Có lỗi xảy ra. Vui lòng thử lại!');
+                    }
+                });
+            }
+        }
+    </script>
+}

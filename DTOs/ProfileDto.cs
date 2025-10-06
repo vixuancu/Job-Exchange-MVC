@@ -34,6 +34,10 @@ public class ProfileDto
 
     // For Employer
     public CompanyDto? Company { get; set; }
+
+    // Flat properties for display (Admin views)
+    public string? CompanyName { get; set; }
+    public string? CompanyLogoUrl { get; set; }
 }
 
 public class CompanyDto

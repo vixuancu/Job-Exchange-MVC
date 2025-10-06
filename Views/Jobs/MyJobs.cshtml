@@ -1,4 +1,4 @@
-@model IEnumerable<JobExchangeMvc.Models.Job>
+@model IEnumerable<JobExchangeMvc.DTOs.JobDto>
 
 @{
     ViewData["Title"] = "Quản lý tin tuyển dụng";
@@ -75,7 +75,7 @@
                                         <strong>@job.Title</strong>
                                     </a>
                                 </td>
-                                <td>@job.Category.Name</td>
+                                <td>@job.CategoryName</td>
                                 <td>
                                     <i class="fas fa-map-marker-alt"></i> @job.Location
                                 </td>
@@ -109,10 +109,10 @@
                                 </td>
                                 <td>
                                     <a asp-action="Applicants" asp-route-id="@job.Id" class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-users"></i> @job.Applications.Count
+                                        <i class="fas fa-users"></i> @job.ApplicationsCount
                                     </a>
                                 </td>
-                                <td>@job.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td>@job.CreatedAt?.ToString("dd/MM/yyyy")</td>
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
                                         <a asp-action="Edit" asp-route-id="@job.Id" class="btn btn-sm btn-primary" title="Chỉnh sửa">

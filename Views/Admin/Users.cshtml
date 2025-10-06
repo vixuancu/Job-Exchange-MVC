@@ -33,17 +33,18 @@
                     <label class="form-label">Vai trò</label>
                     <select name="role" class="form-select" onchange="this.form.submit()">
                         <option value="">Tất cả</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Employer">Nhà tuyển dụng</option>
-                        <option value="Applicant">Ứng viên</option>
+                        <option value="Admin" selected="@(ViewBag.SelectedRole == "Admin")">Admin</option>
+                        <option value="Employer" selected="@(ViewBag.SelectedRole == "Employer")">Nhà tuyển dụng
+                        </option>
+                        <option value="Applicant" selected="@(ViewBag.SelectedRole == "Applicant")">Ứng viên</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Trạng thái</label>
                     <select name="status" class="form-select" onchange="this.form.submit()">
                         <option value="">Tất cả</option>
-                        <option value="active">Đang hoạt động</option>
-                        <option value="inactive">Đã khóa</option>
+                        <option value="active" selected="@(ViewBag.SelectedStatus == "active")">Đang hoạt động</option>
+                        <option value="inactive" selected="@(ViewBag.SelectedStatus == "inactive")">Đã khóa</option>
                     </select>
                 </div>
             </form>
@@ -75,7 +76,8 @@
                                     <div class="d-flex align-items-center">
                                         @if (!string.IsNullOrEmpty(user.AvatarUrl))
                                         {
-                                            <img src="@user.AvatarUrl" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
+                                            <img src="@user.AvatarUrl" alt="Avatar" class="rounded-circle me-2" width="32"
+                                                height="32">
                                         }
                                         else
                                         {
@@ -122,8 +124,8 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="userId" value="@user.Id" />
                                                 <input type="hidden" name="isActive" value="false" />
-                                                <button type="submit" class="btn btn-warning btn-sm" 
-                                                        onclick="return confirm('Xác nhận khóa tài khoản này?')">
+                                                <button type="submit" class="btn btn-warning btn-sm"
+                                                    onclick="return confirm('Xác nhận khóa tài khoản này?')">
                                                     <i class="fas fa-lock"></i> Khóa
                                                 </button>
                                             </form>
@@ -135,7 +137,7 @@
                                                 <input type="hidden" name="userId" value="@user.Id" />
                                                 <input type="hidden" name="isActive" value="true" />
                                                 <button type="submit" class="btn btn-success btn-sm"
-                                                        onclick="return confirm('Xác nhận mở khóa tài khoản này?')">
+                                                    onclick="return confirm('Xác nhận mở khóa tài khoản này?')">
                                                     <i class="fas fa-unlock"></i> Mở khóa
                                                 </button>
                                             </form>

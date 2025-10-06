@@ -46,13 +46,16 @@ public class JobDto
     public string? CompanyAddress { get; set; }
     public string? CompanyCity { get; set; }
     public int? CompanyEmployerId { get; set; }
-    
+
     // Category info
     public string? CategoryName { get; set; }
-    
+
     // Job status info
     public string? Status { get; set; }
     public bool IsActive { get; set; }
     public int ViewCount { get; set; }
     public DateTime? CreatedAt { get; set; }
+
+    // Applications count for employer
+    public int ApplicationsCount { get; set; }
 }

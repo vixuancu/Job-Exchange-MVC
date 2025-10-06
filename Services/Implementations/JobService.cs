@@ -259,6 +259,7 @@ public class JobService : IJobService
             var jobs = await _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
+                .Include(j => j.Applications)
                 .Where(j => j.Company.EmployerId == employerId)
                 .OrderByDescending(j => j.CreatedAt)
                 .Select(j => new JobDto
@@ -279,7 +280,9 @@ public class JobService : IJobService
                     CompanyName = j.Company.Name,
                     CategoryId = j.CategoryId,
                     CategoryName = j.Category.Name,
-                    CreatedAt = j.CreatedAt
+                    CreatedAt = j.CreatedAt,
+                    IsActive = j.IsActive,
+                    ApplicationsCount = j.Applications.Count
                 })
                 .ToListAsync();
 
@@ -389,5 +392,89 @@ public class JobService : IJobService
             .Where(c => c.IsActive)
             .OrderBy(c => c.Name)
             .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Category>> GetAllCategoriesForAdminAsync()
+    {
+        return await _context.Categories
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+    }
+
+    public async Task<Category?> GetCategoryByIdAsync(int id)
+    {
+        return await _context.Categories.FindAsync(id);
+    }
+
+    public async Task<Category> CreateCategoryAsync(string name, string? description)
+    {
+        try
+        {
+            var category = new Category
+            {
+                Name = name,
+                Description = description,
+                IsActive = true
+            };
+
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Category created: {CategoryName}", name);
+            return category;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating category {CategoryName}", name);
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdateCategoryAsync(int id, string name, string? description, bool isActive)
+    {
+        try
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                return false;
+            }
+
+            category.Name = name;
+            category.Description = description;
+            category.IsActive = isActive;
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Category updated: {CategoryId}", id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating category {CategoryId}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> ToggleCategoryStatusAsync(int id, bool isActive)
+    {
+        try
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                return false;
+            }
+
+            category.IsActive = isActive;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Category status toggled: {CategoryId} - Active: {IsActive}", id, isActive);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling category status {CategoryId}", id);
+            return false;
+        }
     }
 }

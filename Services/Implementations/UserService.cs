@@ -195,6 +195,31 @@ public class UserService : IUserService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<ProfileDto>> GetAllUsersAsProfileDtoAsync()
+    {
+        var users = await _context.Users
+            .Include(u => u.Company)
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync();
+
+        return users.Select(u => new ProfileDto
+        {
+            Id = u.Id,
+            Email = u.Email,
+            FullName = u.FullName,
+            PhoneNumber = u.PhoneNumber,
+            Bio = u.Bio,
+            Skills = u.Skills,
+            AvatarUrl = u.AvatarUrl,
+            CvUrl = u.CvUrl,
+            Role = u.Role,
+            IsActive = u.IsActive,
+            CreatedAt = u.CreatedAt,
+            CompanyName = u.Company?.Name,
+            CompanyLogoUrl = u.Company?.LogoUrl
+        });
+    }
+
     public async Task<bool> UpdateUserStatusAsync(int userId, bool isActive)
     {
         try

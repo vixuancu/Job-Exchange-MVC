@@ -11,6 +11,7 @@ public interface IUserService
     Task<bool> UpdateProfileAsync(int userId, ProfileDto profileDto);
     Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
     Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<IEnumerable<ProfileDto>> GetAllUsersAsProfileDtoAsync();
     Task<bool> UpdateUserStatusAsync(int userId, bool isActive);
     Task<bool> UpdateUserRoleAsync(int userId, string role);
 }

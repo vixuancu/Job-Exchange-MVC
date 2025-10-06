@@ -46,9 +46,32 @@ public class AdminController : Controller
 
     // GET: Admin/Users
     [HttpGet]
-    public async Task<IActionResult> Users()
+    public async Task<IActionResult> Users(string? role, string? status)
     {
-        var users = await _userService.GetAllUsersAsync();
+        var users = await _userService.GetAllUsersAsProfileDtoAsync();
+
+        // Filter by role
+        if (!string.IsNullOrEmpty(role))
+        {
+            users = users.Where(u => u.Role == role);
+        }
+
+        // Filter by status
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "active")
+            {
+                users = users.Where(u => u.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                users = users.Where(u => !u.IsActive);
+            }
+        }
+
+        ViewBag.SelectedRole = role;
+        ViewBag.SelectedStatus = status;
+
         return View(users);
     }
 
@@ -147,8 +170,94 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Categories()
     {
-        var categories = await _jobService.GetAllCategoriesAsync();
+        // Get all categories including inactive ones for admin
+        var categories = await _jobService.GetAllCategoriesForAdminAsync();
         return View(categories);
+    }
+
+    // POST: Admin/CreateCategory
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateCategory(string name, string? description)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["ErrorMessage"] = "Tên danh mục không được để trống";
+                return RedirectToAction("Categories");
+            }
+
+            await _jobService.CreateCategoryAsync(name, description);
+            TempData["SuccessMessage"] = "Thêm danh mục thành công!";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating category");
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi thêm danh mục";
+        }
+
+        return RedirectToAction("Categories");
+    }
+
+    // POST: Admin/UpdateCategory
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateCategory(int id, string name, string? description, bool isActive)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["ErrorMessage"] = "Tên danh mục không được để trống";
+                return RedirectToAction("Categories");
+            }
+
+            var result = await _jobService.UpdateCategoryAsync(id, name, description, isActive);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Cập nhật danh mục thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy danh mục";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating category {CategoryId}", id);
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi cập nhật danh mục";
+        }
+
+        return RedirectToAction("Categories");
+    }
+
+    // POST: Admin/ToggleCategoryStatus
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleCategoryStatus(int id, bool isActive)
+    {
+        try
+        {
+            var result = await _jobService.ToggleCategoryStatusAsync(id, isActive);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = $"Đã {(isActive ? "kích hoạt" : "tạm dừng")} danh mục thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy danh mục";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling category status {CategoryId}", id);
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi thay đổi trạng thái danh mục";
+        }
+
+        return RedirectToAction("Categories");
     }
 
     // GET: Admin/Statistics

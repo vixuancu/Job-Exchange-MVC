@@ -1,9 +1,7 @@
 @model JobExchangeMvc.DTOs.JobDto
-@inject JobExchangeMvc.Data.ApplicationDbContext _context
 
 @{
     ViewData["Title"] = "Đăng tin tuyển dụng";
-    var categories = _context.Categories.Where(c => c.IsActive).ToList();
 }
 
 <div class="row justify-content-center">
@@ -32,12 +30,8 @@
                             <label asp-for="CategoryId" class="form-label">
                                 Ngành nghề <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="CategoryId" class="form-select">
+                            <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.Categories">
                                 <option value="">-- Chọn ngành nghề --</option>
-                                @foreach (var category in categories)
-                                {
-                                    <option value="@category.Id">@category.Name</option>
-                                }
                             </select>
                             <span asp-validation-for="CategoryId" class="text-danger"></span>
                         </div>
