@@ -47,6 +47,11 @@ public class UserService : IUserService
 
             var profileDto = new ProfileDto
             {
+                Id = user.Id,
+                Email = user.Email,
+                Role = user.Role,
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt,
                 FullName = user.FullName,
                 PhoneNumber = user.PhoneNumber,
                 AvatarUrl = user.AvatarUrl,

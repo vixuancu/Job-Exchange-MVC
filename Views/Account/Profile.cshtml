@@ -10,7 +10,8 @@
             <div class="card-body text-center">
                 @if (!string.IsNullOrEmpty(Model.AvatarUrl))
                 {
-                    <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-3"
+                        style="width: 150px; height: 150px; object-fit: cover;">
                 }
                 else
                 {
@@ -26,7 +27,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-9">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
@@ -35,19 +36,39 @@
                 </h5>
             </div>
             <div class="card-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
                 <form asp-action="Profile" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                    
+
+                    @* Hidden fields for readonly properties *@
+                    <input type="hidden" asp-for="Email" />
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="Role" />
+
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Email" class="form-label">
+                            <label class="form-label">
                                 <i class="fas fa-envelope"></i> Email
                             </label>
-                            <input asp-for="Email" class="form-control" readonly />
+                            <input type="text" class="form-control" value="@Model.Email" readonly disabled />
                             <div class="form-text">Email không thể thay đổi</div>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <label asp-for="FullName" class="form-label">
                                 <i class="fas fa-user"></i> Họ và tên <span class="text-danger">*</span>
@@ -56,7 +77,7 @@
                             <span asp-validation-for="FullName" class="text-danger"></span>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label asp-for="PhoneNumber" class="form-label">
                             <i class="fas fa-phone"></i> Số điện thoại
@@ -64,44 +85,47 @@
                         <input asp-for="PhoneNumber" class="form-control" />
                         <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label asp-for="Bio" class="form-label">
                             <i class="fas fa-info-circle"></i> Giới thiệu bản thân
                         </label>
-                        <textarea asp-for="Bio" class="form-control" rows="4" placeholder="Giới thiệu ngắn gọn về bản thân..."></textarea>
+                        <textarea asp-for="Bio" class="form-control" rows="4"
+                            placeholder="Giới thiệu ngắn gọn về bản thân..."></textarea>
                         <span asp-validation-for="Bio" class="text-danger"></span>
                     </div>
-                    
+
                     @if (User.IsInRole("Applicant"))
                     {
                         <div class="mb-3">
                             <label asp-for="Skills" class="form-label">
                                 <i class="fas fa-code"></i> Kỹ năng
                             </label>
-                            <input asp-for="Skills" class="form-control" placeholder="C#, ASP.NET Core, SQL, JavaScript..." />
+                            <input asp-for="Skills" class="form-control"
+                                placeholder="C#, ASP.NET Core, SQL, JavaScript..." />
                             <span asp-validation-for="Skills" class="text-danger"></span>
                             <div class="form-text">Các kỹ năng cách nhau bởi dấu phẩy</div>
                         </div>
                     }
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">
                                 <i class="fas fa-image"></i> Ảnh đại diện
                             </label>
-                            <input type="file" name="avatarFile" class="form-control" accept="image/*" id="avatarInput" />
+                            <input type="file" name="avatar" class="form-control" accept="image/*" id="avatarInput" />
                             <div class="form-text">Định dạng: JPG, PNG. Tối đa 2MB</div>
-                            <img id="avatarPreview" src="#" alt="Preview" class="mt-2" style="max-width: 200px; display: none;">
+                            <img id="avatarPreview" src="#" alt="Preview" class="mt-2"
+                                style="max-width: 200px; display: none;">
                         </div>
-                        
+
                         @if (User.IsInRole("Applicant"))
                         {
                             <div class="col-md-6">
                                 <label class="form-label">
                                     <i class="fas fa-file-pdf"></i> CV của bạn
                                 </label>
-                                <input type="file" name="cvFile" class="form-control" accept=".pdf,.doc,.docx" id="cvInput" />
+                                <input type="file" name="cv" class="form-control" accept=".pdf,.doc,.docx" id="cvInput" />
                                 <div class="form-text">Định dạng: PDF, DOC, DOCX. Tối đa 5MB</div>
                                 @if (!string.IsNullOrEmpty(Model.CvUrl))
                                 {
@@ -114,25 +138,89 @@
                             </div>
                         }
                     </div>
-                    
+
+                    @* Company Information for Employer *@
+                    @if (User.IsInRole("Employer"))
+                    {
+                        <hr>
+                        <h6 class="mb-3"><i class="fas fa-building"></i> Thông tin công ty</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Name" class="form-label">
+                                Tên công ty <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Company.Name" class="form-control" />
+                            <span asp-validation-for="Company.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Description" class="form-label">
+                                Giới thiệu công ty
+                            </label>
+                            <textarea asp-for="Company.Description" class="form-control" rows="4"
+                                placeholder="Mô tả về công ty..."></textarea>
+                            <span asp-validation-for="Company.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Company.Website" class="form-label">
+                                    Website
+                                </label>
+                                <input asp-for="Company.Website" class="form-control" placeholder="https://example.com" />
+                                <span asp-validation-for="Company.Website" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Company.City" class="form-label">
+                                    Thành phố
+                                </label>
+                                <input asp-for="Company.City" class="form-control" placeholder="Hà Nội, TP.HCM..." />
+                                <span asp-validation-for="Company.City" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Address" class="form-label">
+                                Địa chỉ
+                            </label>
+                            <input asp-for="Company.Address" class="form-control" placeholder="Số nhà, tên đường..." />
+                            <span asp-validation-for="Company.Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-image"></i> Logo công ty
+                            </label>
+                            <input type="file" name="companyLogo" class="form-control" accept="image/*" id="logoInput" />
+                            <div class="form-text">Định dạng: JPG, PNG. Tối đa 2MB</div>
+                            @if (Model.Company != null && !string.IsNullOrEmpty(Model.Company.LogoUrl))
+                            {
+                                <div class="mt-2">
+                                    <img src="@Model.Company.LogoUrl" alt="Logo" style="max-width: 150px;">
+                                </div>
+                            }
+                        </div>
+                    }
+
                     <hr>
-                    
+
                     <h6 class="mb-3"><i class="fas fa-key"></i> Thay đổi mật khẩu (tùy chọn)</h6>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label asp-for="CurrentPassword" class="form-label">Mật khẩu hiện tại</label>
                             <input asp-for="CurrentPassword" class="form-control" />
                             <span asp-validation-for="CurrentPassword" class="text-danger"></span>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <label asp-for="NewPassword" class="form-label">Mật khẩu mới</label>
                             <input asp-for="NewPassword" class="form-control" />
                             <span asp-validation-for="NewPassword" class="text-danger"></span>
                         </div>
                     </div>
-                    
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Hủy
@@ -151,11 +239,11 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         // Preview avatar
-        document.getElementById('avatarInput').addEventListener('change', function(e) {
+        document.getElementById('avatarInput').addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const preview = document.getElementById('avatarPreview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';

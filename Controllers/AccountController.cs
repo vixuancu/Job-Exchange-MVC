@@ -243,7 +243,22 @@ public class AccountController : Controller
             return View(model);
         }
 
-        TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
+        // Handle password change if provided
+        if (!string.IsNullOrWhiteSpace(model.CurrentPassword) && !string.IsNullOrWhiteSpace(model.NewPassword))
+        {
+            var passwordChangeResult = await _userService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+            if (!passwordChangeResult)
+            {
+                TempData["ErrorMessage"] = "Cập nhật hồ sơ thành công nhưng mật khẩu hiện tại không đúng!";
+                return RedirectToAction("Profile");
+            }
+            TempData["SuccessMessage"] = "Cập nhật hồ sơ và mật khẩu thành công!";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
+        }
+
         return RedirectToAction("Profile");
     }
 
