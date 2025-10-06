@@ -20,16 +20,18 @@
                     <label class="form-label">
                         <i class="fas fa-search"></i> Từ khóa
                     </label>
-                    <input type="text" name="searchTerm" class="form-control" placeholder="Tìm kiếm theo tiêu đề, kỹ năng..." value="@ViewBag.SearchTerm">
+                    <input type="text" name="searchTerm" class="form-control"
+                        placeholder="Tìm kiếm theo tiêu đề, kỹ năng..." value="@ViewBag.SearchTerm">
                 </div>
-                
+
                 <div class="col-md-3">
                     <label class="form-label">
                         <i class="fas fa-map-marker-alt"></i> Địa điểm
                     </label>
-                    <input type="text" name="location" class="form-control" placeholder="Hà Nội, TP.HCM..." value="@ViewBag.Location">
+                    <input type="text" name="location" class="form-control" placeholder="Hà Nội, TP.HCM..."
+                        value="@ViewBag.Location">
                 </div>
-                
+
                 <div class="col-md-3">
                     <label class="form-label">
                         <i class="fas fa-th-large"></i> Ngành nghề
@@ -40,12 +42,13 @@
                         {
                             foreach (var item in ViewBag.Categories)
                             {
-                                <option value="@item.Value" selected="@(ViewBag.CategoryId?.ToString() == item.Value)">@item.Text</option>
+                                <option value="@item.Value" selected="@(ViewBag.CategoryId?.ToString() == item.Value)">
+                                    @item.Text</option>
                             }
                         }
                     </select>
                 </div>
-                
+
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-search"></i> Tìm kiếm
@@ -70,7 +73,7 @@
                     <span>Không tìm thấy việc làm phù hợp</span>
                 }
             </h5>
-            
+
             @if (User.IsInRole("Employer"))
             {
                 <a asp-action="Create" class="btn btn-success">
@@ -78,7 +81,7 @@
                 </a>
             }
         </div>
-        
+
         <div id="jobsList">
             @await Html.PartialAsync("_JobListPartial", Model)
         </div>
@@ -87,31 +90,31 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             let searchTimeout;
-            
+
             // Prevent form submission, use AJAX instead
-            $('#searchForm').on('submit', function(e) {
+            $('#searchForm').on('submit', function (e) {
                 e.preventDefault();
                 performSearch();
             });
-            
+
             // AJAX search on input change with debounce
-            $('#searchForm input, #searchForm select').on('change keyup', function() {
+            $('#searchForm input, #searchForm select').on('change keyup', function () {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(function() {
+                searchTimeout = setTimeout(function () {
                     performSearch();
                 }, 800); // 800ms debounce for better UX
             });
-            
+
             function performSearch() {
                 // Show loading state
                 $('#jobsList').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Đang tìm kiếm...</span></div></div>');
-                
+
                 const searchTerm = $('input[name="searchTerm"]').val();
                 const location = $('input[name="location"]').val();
                 const categoryId = $('select[name="categoryId"]').val();
-                
+
                 $.ajax({
                     url: '@Url.Action("SearchPartial", "Jobs")',
                     type: 'GET',
@@ -120,9 +123,9 @@
                         location: location,
                         categoryId: categoryId
                     },
-                    success: function(data) {
+                    success: function (data) {
                         $('#jobsList').html(data);
-                        
+
                         // Update result count
                         const jobCount = $('#jobsList .job-card').length;
                         if (jobCount > 0) {
@@ -130,20 +133,20 @@
                         } else {
                             $('#resultsCount').html('<span>Không tìm thấy việc làm phù hợp</span>');
                         }
-                        
+
                         // Update URL without page reload
                         const params = new URLSearchParams();
                         if (searchTerm) params.set('searchTerm', searchTerm);
                         if (location) params.set('location', location);
                         if (categoryId) params.set('categoryId', categoryId);
-                        
-                        const newUrl = params.toString() 
+
+                        const newUrl = params.toString()
                             ? window.location.pathname + '?' + params.toString()
                             : window.location.pathname;
-                        
+
                         window.history.pushState({}, '', newUrl);
                     },
-                    error: function() {
+                    error: function () {
                         $('#jobsList').html('<div class="alert alert-danger">Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại!</div>');
                     }
                 });
@@ -156,12 +159,12 @@
     .job-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    
+
     .job-card:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
     }
-    
+
     .company-logo {
         border-radius: 8px;
         border: 1px solid #e0e0e0;

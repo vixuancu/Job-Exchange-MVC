@@ -17,11 +17,11 @@
                                 <span class="badge bg-success ms-2">Đang tuyển</span>
                             }
                         </h5>
-                        
+
                         <h6 class="text-primary mb-2">
                             <i class="fas fa-building"></i> @job.CompanyName
                         </h6>
-                        
+
                         <div class="mb-2">
                             <span class="badge bg-light text-dark me-2">
                                 <i class="fas fa-map-marker-alt"></i> @job.Location
@@ -35,21 +35,23 @@
                                     <i class="fas fa-dollar-sign"></i> @job.SalaryRange
                                 </span>
                             }
-                            <span class="badge bg-info text-dark">
-                                <i class="fas fa-tag"></i> @job.CategoryName
-                            </span>
-                        </div>
-                        
-                        <p class="card-text text-muted mb-2">
-                            @(job.Description != null && job.Description.Length > 200 ? job.Description.Substring(0, 200) + "..." : job.Description)
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-tag"></i> @job.CategoryName
+                        </span>
+                    </div>
+
+                    <p class="card-text text-muted mb-2">
+                        @(job.Description != null && job.Description.Length > 200 ? job.Description.Substring(0, 200) +
+                                            "..." : job.Description)
                         </p>
-                        
+
                         <small class="text-muted">
                             <i class="far fa-clock"></i> Đăng ngày @job.CreatedAt?.ToString("dd/MM/yyyy")
                             @if (job.ApplicationDeadline.HasValue)
                             {
                                 <span class="ms-3">
-                                    <i class="far fa-calendar-times"></i> Hạn nộp: @job.ApplicationDeadline.Value.ToString("dd/MM/yyyy")
+                                    <i class="far fa-calendar-times"></i> Hạn nộp:
+                                    @job.ApplicationDeadline.Value.ToString("dd/MM/yyyy")
                                 </span>
                             }
                             <span class="ms-3">
@@ -57,7 +59,7 @@
                             </span>
                         </small>
                     </div>
-                    
+
                     <div class="col-md-3 d-flex flex-column justify-content-center align-items-end">
                         <a asp-action="Details" asp-route-id="@job.Id" class="btn btn-primary">
                             Xem chi tiết <i class="fas fa-arrow-right"></i>
