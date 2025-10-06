@@ -20,6 +20,9 @@ public class ApplicationDto
     // Display info
     public string? JobTitle { get; set; }
     public string? CompanyName { get; set; }
+    public string? JobLocation { get; set; }
+    public string? JobType { get; set; }
+    public string? SalaryRange { get; set; }
     public string? ApplicantName { get; set; }
     public string? ApplicantEmail { get; set; }
     public DateTime? AppliedAt { get; set; }

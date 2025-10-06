@@ -18,7 +18,13 @@ public class Application
     public string? CvUrl { get; set; }
 
     /// <summary>
-    /// Trạng thái: Pending, Accepted, Rejected, Cancelled
+    /// Trạng thái: 
+    /// - Pending: Đang chờ xét duyệt (mới nộp)
+    /// - Approved: Đã duyệt hồ sơ
+    /// - Interviewing: Đang phỏng vấn
+    /// - Accepted: Đã được tuyển (KẾT QUẢ CUỐI - THÀNH CÔNG)
+    /// - Rejected: Không được tuyển (KẾT QUẢ CUỐI - THẤT BẠI)
+    /// - Cancelled: Ứng viên tự hủy
     /// </summary>
     [Required]
     [MaxLength(20)]

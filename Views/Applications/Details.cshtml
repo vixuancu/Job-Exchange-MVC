@@ -1,0 +1,337 @@
+@model JobExchangeMvc.DTOs.ApplicationDto
+
+@{
+    ViewData["Title"] = "Chi tiết đơn ứng tuyển";
+    var isEmployer = User.IsInRole("Employer");
+    var isApplicant = User.IsInRole("Applicant");
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+          function updateStatus(applicationId, status) {
+            let confirmMessage = '';
+            switch(status) {
+                case 'Approved':
+                    confirmMessage = 'Bạn có chắc chắn muốn duyệt hồ sơ này?';
+                    break;
+                case 'Rejected':
+                    confirmMessage = 'Bạn có chắc chắn muốn từ chối ứng viên này?';
+                    break;
+                case 'Interviewing':
+                    confirmMessage = 'Bạn có chắc chắn muốn mời ứng viên phỏng vấn?';
+                    break;
+                case 'Accepted':
+                    confirmMessage = 'Bạn có chắc chắn muốn TUYỂN DỤNG ứng viên này?\n\nĐây là quyết định cuối cùng!';
+                    break;
+            }ass="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-file-alt"></i> Chi tiết đơn ứng tuyển
+            </h2>
+            @if (isApplicant)
+            {
+                <a asp-action="MyApplications" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            }
+            @if (isEmployer)
+            {
+                <a asp-controller="Jobs" asp-action="Applicants" asp-route-id="@Model.JobId"
+                    class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            }
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Application Status Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">
+                            @switch (Model.Status)
+                            {
+                                case "Pending":
+                                    <span class="badge bg-warning p-2 fs-6">
+                                        <i class="fas fa-clock"></i> Đang chờ xét duyệt
+                                    </span>
+                                    break;
+                                case "Approved":
+                                    <span class="badge bg-primary p-2 fs-6">
+                                        <i class="fas fa-check"></i> Đã duyệt hồ sơ
+                                    </span>
+                                    break;
+                                case "Interviewing":
+                                    <span class="badge bg-info p-2 fs-6">
+                                        <i class="fas fa-handshake"></i> Đang phỏng vấn
+                                    </span>
+                                    break;
+                                case "Accepted":
+                                    <span class="badge bg-success p-2 fs-6">
+                                        <i class="fas fa-check-circle"></i> Đã được tuyển
+                                    </span>
+                                    break;
+                                case "Rejected":
+                                    <span class="badge bg-danger p-2 fs-6">
+                                        <i class="fas fa-times-circle"></i> Không được tuyển
+                                    </span>
+                                    break;
+                                case "Cancelled":
+                                    <span class="badge bg-secondary p-2 fs-6">
+                                        <i class="fas fa-ban"></i> Đã hủy
+                                    </span>
+                                    break;
+                            }
+                        </h4>
+                        <small class="text-muted">
+                            <i class="far fa-clock"></i> Ứng tuyển ngày @Model.AppliedAt?.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                        @if (Model.ReviewedAt.HasValue)
+                        {
+                            <br>
+                            <small class="text-muted">
+                                <i class="far fa-calendar-check"></i> Xét duyệt ngày
+                                @Model.ReviewedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            </small>
+                        }
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        @if (isEmployer && Model.Status == "Pending")
+                        {
+                            <div class="btn-group-vertical d-grid gap-2" style="width: 200px;">
+                                <button type="button" class="btn btn-success" onclick="updateStatus(@Model.Id, 'Approved')">
+                                    <i class="fas fa-check"></i> Duyệt hồ sơ
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="updateStatus(@Model.Id, 'Rejected')">
+                                    <i class="fas fa-times"></i> Từ chối
+                                </button>
+                            </div>
+                        }
+                        @if (isEmployer && Model.Status == "Approved")
+                        {
+                            <div class="btn-group-vertical d-grid gap-2" style="width: 200px;">
+                                <button type="button" class="btn btn-info" onclick="updateStatus(@Model.Id, 'Interviewing')">
+                                    <i class="fas fa-handshake"></i> Mời phỏng vấn
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="updateStatus(@Model.Id, 'Rejected')">
+                                    <i class="fas fa-times"></i> Không tuyển
+                                </button>
+                            </div>
+                        }
+                        @if (isEmployer && Model.Status == "Interviewing")
+                        {
+                            <div class="btn-group-vertical d-grid gap-2" style="width: 200px;">
+                                <button type="button" class="btn btn-success" onclick="updateStatus(@Model.Id, 'Accepted')">
+                                    <i class="fas fa-user-check"></i> Tuyển dụng
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="updateStatus(@Model.Id, 'Rejected')">
+                                    <i class="fas fa-times"></i> Không tuyển
+                                </button>
+                            </div>
+                        }
+                        @if (isEmployer && (Model.Status == "Accepted" || Model.Status == "Rejected"))
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle"></i> Đã hoàn tất
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Job & Applicant Info -->
+            <div class="col-md-8">
+                <!-- Job Information -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-briefcase"></i> Thông tin công việc
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a asp-controller="Jobs" asp-action="Details" asp-route-id="@Model.JobId"
+                                class="text-decoration-none">
+                                @Model.JobTitle
+                            </a>
+                        </h5>
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-building"></i> @Model.CompanyName
+                        </h6>
+
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.JobLocation))
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="fas fa-map-marker-alt text-danger"></i> Địa điểm:</strong><br>
+                                    @Model.JobLocation
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.JobType))
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="fas fa-briefcase text-primary"></i> Loại hình:</strong><br>
+                                    @Model.JobType
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.SalaryRange))
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="fas fa-dollar-sign text-success"></i> Mức lương:</strong><br>
+                                    @Model.SalaryRange
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Applicant Information (For Employer) -->
+                @if (isEmployer)
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user"></i> Thông tin ứng viên
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong><i class="fas fa-user-circle"></i> Họ tên:</strong><br>
+                                @Model.ApplicantName
+                            </div>
+                            <div class="mb-3">
+                                <strong><i class="fas fa-envelope"></i> Email:</strong><br>
+                                <a href="mailto:@Model.ApplicantEmail">@Model.ApplicantEmail</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Cover Letter -->
+                @if (!string.IsNullOrEmpty(Model.CoverLetter))
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-envelope-open-text"></i> Thư xin việc
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p style="white-space: pre-wrap;">@Model.CoverLetter</p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Right Column: CV & Notes -->
+            <div class="col-md-4">
+                <!-- CV Download -->
+                @if (!string.IsNullOrEmpty(Model.CvUrl))
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body text-center">
+                            <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                            <h6 class="mb-3">Hồ sơ ứng viên (CV)</h6>
+                            <a href="@Model.CvUrl" target="_blank" class="btn btn-primary w-100">
+                                <i class="fas fa-download"></i> Tải CV
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                <!-- Employer Notes -->
+                @if (isEmployer && !string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-sticky-note"></i> Ghi chú
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">@Model.Note</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Quick Stats -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="fas fa-info-circle"></i> Thông tin</h6>
+                        <div class="mb-2">
+                            <small class="text-muted">Mã đơn ứng tuyển:</small><br>
+                            <strong>#@Model.Id</strong>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">Ngày nộp:</small><br>
+                            <strong>@Model.AppliedAt?.ToString("dd/MM/yyyy")</strong>
+                        </div>
+                        @if (Model.ReviewedAt.HasValue)
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted">Ngày xét duyệt:</small><br>
+                                <strong>@Model.ReviewedAt.Value.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateStatus(applicationId, status) {
+            let confirmMessage = '';
+            switch (status) {
+                case 'Approved':
+                    confirmMessage = 'Bạn có chắc chắn muốn duyệt hồ sơ này?';
+                    break;
+                case 'Rejected':
+                    confirmMessage = 'Bạn có chắc chắn muốn từ chối hồ sơ này?';
+                    break;
+                case 'Interviewing':
+                    confirmMessage = 'Bạn có chắc chắn muốn mời ứng viên phỏng vấn?';
+                    break;
+            }
+
+            if (confirm(confirmMessage)) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("UpdateStatus", "Applications")';
+
+                var tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                form.appendChild(tokenInput);
+
+                var idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = applicationId;
+                form.appendChild(idInput);
+
+                var statusInput = document.createElement('input');
+                statusInput.type = 'hidden';
+                statusInput.name = 'status';
+                statusInput.value = status;
+                form.appendChild(statusInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

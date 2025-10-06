@@ -108,6 +108,9 @@ public class ApplicationService : IApplicationService
                 JobId = application.JobId,
                 JobTitle = application.Job.Title,
                 CompanyName = application.Job.Company.Name,
+                JobLocation = application.Job.Location,
+                JobType = application.Job.JobType,
+                SalaryRange = application.Job.SalaryRange,
                 ApplicantName = application.Applicant.FullName,
                 ApplicantEmail = application.Applicant.Email,
                 CoverLetter = application.CoverLetter,
@@ -140,6 +143,9 @@ public class ApplicationService : IApplicationService
                     JobId = a.JobId,
                     JobTitle = a.Job.Title,
                     CompanyName = a.Job.Company.Name,
+                    JobLocation = a.Job.Location,
+                    JobType = a.Job.JobType,
+                    SalaryRange = a.Job.SalaryRange,
                     CoverLetter = a.CoverLetter,
                     CvUrl = a.CvUrl,
                     Status = a.Status,
@@ -240,9 +246,11 @@ public class ApplicationService : IApplicationService
                 return false;
             }
 
-            // Validate status
-            if (status != "Pending" && status != "Accepted" && status != "Rejected" && status != "Cancelled")
+            // Validate status - All possible statuses in the workflow
+            var validStatuses = new[] { "Pending", "Approved", "Interviewing", "Accepted", "Rejected", "Cancelled" };
+            if (!validStatuses.Contains(status))
             {
+                _logger.LogWarning("Invalid status: {Status} for application {ApplicationId}", status, applicationId);
                 return false;
             }
 

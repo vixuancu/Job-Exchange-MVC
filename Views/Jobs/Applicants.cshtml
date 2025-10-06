@@ -104,18 +104,28 @@
                                             </span>
                                             break;
                                         case "Approved":
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check-circle"></i> Đã duyệt
-                                            </span>
-                                            break;
-                                        case "Rejected":
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times-circle"></i> Từ chối
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-check"></i> Đã duyệt
                                             </span>
                                             break;
                                         case "Interviewing":
                                             <span class="badge bg-info">
                                                 <i class="fas fa-handshake"></i> Đang phỏng vấn
+                                            </span>
+                                            break;
+                                        case "Accepted":
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Đã tuyển
+                                            </span>
+                                            break;
+                                        case "Rejected":
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle"></i> Không tuyển
+                                            </span>
+                                            break;
+                                        case "Cancelled":
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-ban"></i> Đã hủy
                                             </span>
                                             break;
                                     }
@@ -132,12 +142,12 @@
                                         @if (application.Status == "Pending")
                                         {
                                             <button type="button" class="btn btn-sm btn-success" 
-                                                    onclick="updateStatus(@application.Id, 'Approved')" title="Duyệt">
-                                                <i class="fas fa-check"></i>
+                                                    onclick="updateStatus(@application.Id, 'Approved')" title="Duyệt hồ sơ">
+                                                <i class="fas fa-check"></i> Duyệt
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" 
                                                     onclick="updateStatus(@application.Id, 'Rejected')" title="Từ chối">
-                                                <i class="fas fa-times"></i>
+                                                <i class="fas fa-times"></i> Từ chối
                                             </button>
                                         }
                                         
@@ -145,7 +155,23 @@
                                         {
                                             <button type="button" class="btn btn-sm btn-info" 
                                                     onclick="updateStatus(@application.Id, 'Interviewing')" title="Mời phỏng vấn">
-                                                <i class="fas fa-handshake"></i>
+                                                <i class="fas fa-handshake"></i> Mời PV
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
+                                                <i class="fas fa-times"></i> Không tuyển
+                                            </button>
+                                        }
+                                        
+                                        @if (application.Status == "Interviewing")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-success" 
+                                                    onclick="updateStatus(@application.Id, 'Accepted')" title="Tuyển dụng">
+                                                <i class="fas fa-user-check"></i> Tuyển dụng
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
+                                                <i class="fas fa-times"></i> Không tuyển
                                             </button>
                                         }
                                     </div>
@@ -200,10 +226,13 @@ else
                     confirmMessage = 'Bạn có chắc chắn muốn duyệt hồ sơ này?';
                     break;
                 case 'Rejected':
-                    confirmMessage = 'Bạn có chắc chắn muốn từ chối hồ sơ này?';
+                    confirmMessage = 'Bạn có chắc chắn muốn từ chối ứng viên này?';
                     break;
                 case 'Interviewing':
                     confirmMessage = 'Bạn có chắc chắn muốn mời ứng viên phỏng vấn?';
+                    break;
+                case 'Accepted':
+                    confirmMessage = 'Bạn có chắc chắn muốn TUYỂN DỤNG ứng viên này?';
                     break;
             }
 
