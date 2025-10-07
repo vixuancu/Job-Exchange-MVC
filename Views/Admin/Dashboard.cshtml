@@ -1,38 +1,44 @@
-@inject JobExchangeMvc.Data.ApplicationDbContext _context
-@using Microsoft.EntityFrameworkCore
+@model JobExchangeMvc.DTOs.AdminDashboardStatsDto
 
 @{
     ViewData["Title"] = "Dashboard - Quản trị";
-    
-    var totalUsers = _context.Users.Count();
-    var totalJobs = _context.Jobs.Count();
-    var totalApplications = _context.Applications.Count();
-    var pendingJobs = _context.Jobs.Count(j => j.Status == "Pending");
-    
-    var recentJobs = _context.Jobs
-        .Include(j => j.Company)
-        .Include(j => j.Category)
-        .OrderByDescending(j => j.CreatedAt)
-        .Take(5)
-        .ToList();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-tachometer-alt"></i> Bảng điều khiển</h2>
+    <div class="text-muted">
+        <i class="fas fa-calendar"></i> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+    </div>
 </div>
 
-<!-- Statistics Cards -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ✅ Main Statistics Cards -->
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white shadow-sm">
+    <!-- Users Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-primary text-white shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-white-50 mb-1">Người dùng</h6>
-                        <h3 class="mb-0">@totalUsers</h3>
+                        <h3 class="mb-0">@Model.TotalUsers</h3>
+                        <small>
+                            <i class="fas fa-arrow-up"></i> +@Model.NewUsersThisMonth tháng này
+                        </small>
                     </div>
                     <i class="fas fa-users fa-3x opacity-50"></i>
                 </div>
+                <hr class="my-2 border-light">
+                <small>
+                    Admin: @Model.TotalAdmins | NTD: @Model.TotalEmployers | ỨV: @Model.TotalApplicants
+                </small>
             </div>
             <div class="card-footer bg-primary bg-opacity-75">
                 <a asp-action="Users" class="text-white text-decoration-none">
@@ -41,17 +47,25 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-success text-white shadow-sm">
+
+    <!-- Jobs Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-success text-white shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-white-50 mb-1">Việc làm</h6>
-                        <h3 class="mb-0">@totalJobs</h3>
+                        <h3 class="mb-0">@Model.TotalJobs</h3>
+                        <small>
+                            <i class="fas fa-arrow-up"></i> +@Model.NewJobsThisMonth tháng này
+                        </small>
                     </div>
                     <i class="fas fa-briefcase fa-3x opacity-50"></i>
                 </div>
+                <hr class="my-2 border-light">
+                <small>
+                    Chờ: @Model.PendingJobs | Duyệt: @Model.ApprovedJobs | Đóng: @Model.ClosedJobs
+                </small>
             </div>
             <div class="card-footer bg-success bg-opacity-75">
                 <a asp-action="Jobs" class="text-white text-decoration-none">
@@ -60,17 +74,25 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-info text-white shadow-sm">
+
+    <!-- Applications Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-info text-white shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-white-50 mb-1">Đơn ứng tuyển</h6>
-                        <h3 class="mb-0">@totalApplications</h3>
+                        <h3 class="mb-0">@Model.TotalApplications</h3>
+                        <small>
+                            <i class="fas fa-arrow-up"></i> +@Model.NewApplicationsThisMonth tháng này
+                        </small>
                     </div>
                     <i class="fas fa-file-alt fa-3x opacity-50"></i>
                 </div>
+                <hr class="my-2 border-light">
+                <small>
+                    Chờ: @Model.PendingApplications | Chấp nhận: @Model.AcceptedApplications
+                </small>
             </div>
             <div class="card-footer bg-info bg-opacity-75">
                 <a asp-action="Statistics" class="text-white text-decoration-none">
@@ -79,113 +101,187 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-warning text-white shadow-sm">
+
+    <!-- Pending Jobs Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-warning text-white shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-white-50 mb-1">Chờ duyệt</h6>
-                        <h3 class="mb-0">@pendingJobs</h3>
+                        <h3 class="mb-0">@Model.PendingJobs</h3>
+                        <small>Tin tuyển dụng cần xét duyệt</small>
                     </div>
                     <i class="fas fa-clock fa-3x opacity-50"></i>
                 </div>
+                <hr class="my-2 border-light">
+                <small>
+                    Từ chối: @Model.RejectedJobs | Hết hạn: @Model.ExpiredJobs
+                </small>
             </div>
             <div class="card-footer bg-warning bg-opacity-75">
                 <a asp-action="Jobs" asp-route-status="Pending" class="text-white text-decoration-none">
-                    Xem chi tiết <i class="fas fa-arrow-right"></i>
+                    Duyệt ngay <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Jobs -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0"><i class="fas fa-newspaper"></i> Tin tuyển dụng mới nhất</h5>
-    </div>
-    <div class="card-body p-0">
-        @if (recentJobs.Any())
-        {
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Tiêu đề</th>
-                            <th>Công ty</th>
-                            <th>Ngành nghề</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày đăng</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var job in recentJobs)
-                        {
-                            <tr>
-                                <td>
-                                    <a asp-controller="Jobs" asp-action="Details" asp-route-id="@job.Id" class="text-decoration-none">
-                                        @job.Title
-                                    </a>
-                                </td>
-                                <td>@job.Company.Name</td>
-                                <td><span class="badge bg-info">@job.Category.Name</span></td>
-                                <td>
-                                    @switch (job.Status)
-                                    {
-                                        case "Approved":
-                                            <span class="badge bg-success">Đã duyệt</span>
-                                            break;
-                                        case "Pending":
-                                            <span class="badge bg-warning">Chờ duyệt</span>
-                                            break;
-                                        case "Rejected":
-                                            <span class="badge bg-danger">Từ chối</span>
-                                            break;
-                                        case "Closed":
-                                            <span class="badge bg-secondary">Đã đóng</span>
-                                            break;
-                                    }
-                                </td>
-                                <td>@job.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                <td>
-                                    @if (job.Status == "Pending")
-                                    {
-                                        <button type="button" class="btn btn-sm btn-success" onclick="approveJob(@job.Id)">
-                                            <i class="fas fa-check"></i> Duyệt
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="rejectJob(@job.Id)">
-                                            <i class="fas fa-times"></i> Từ chối
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Jobs" asp-action="Details" asp-route-id="@job.Id" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> Xem
-                                        </a>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+
+<!-- ✅ Performance Metrics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Tỷ lệ phản hồi</h6>
             </div>
-        }
-        else
-        {
-            <div class="p-4 text-center text-muted">
-                <i class="fas fa-inbox fa-3x mb-3"></i>
-                <p>Chưa có tin tuyển dụng nào</p>
+            <div class="card-body text-center">
+                <h2 class="text-success">@Model.ResponseRate%</h2>
+                <p class="text-muted mb-0">
+                    <small>@(Model.TotalApplications - Model.PendingApplications)/@Model.TotalApplications đơn đã xét</small>
+                </p>
             </div>
-        }
+        </div>
     </div>
-    <div class="card-footer text-center">
-        <a asp-action="Jobs" class="text-decoration-none">
-            Xem tất cả tin tuyển dụng <i class="fas fa-arrow-right"></i>
-        </a>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-percentage"></i> Tỷ lệ chấp nhận</h6>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-info">@Model.AcceptanceRate%</h2>
+                <p class="text-muted mb-0">
+                    <small>@Model.AcceptedApplications đơn được chấp nhận</small>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-eye"></i> Lượt xem</h6>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-primary">@Model.TotalViews.ToString("N0")</h2>
+                <p class="text-muted mb-0">
+                    <small>Tổng lượt xem tin tuyển dụng</small>
+                </p>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- ✅ Top Categories & Companies -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-th-large"></i> Top 5 ngành nghề</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TopCategories.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var category in Model.TopCategories)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@category.Key</span>
+                                <span class="badge bg-primary rounded-pill">@category.Value việc</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center">Chưa có dữ liệu</p>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-building"></i> Top 5 công ty</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TopCompanies.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var company in Model.TopCompanies)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@company.Key</span>
+                                <span class="badge bg-success rounded-pill">@company.Value việc</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center">Chưa có dữ liệu</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Thao tác nhanh</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Users" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-users fa-2x d-block mb-2"></i>
+                            Quản lý người dùng
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Jobs" class="btn btn-outline-success w-100 py-3">
+                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                            Quản lý việc làm
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Categories" class="btn btn-outline-info w-100 py-3">
+                            <i class="fas fa-th-large fa-2x d-block mb-2"></i>
+                            Quản lý danh mục
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Statistics" class="btn btn-outline-warning w-100 py-3">
+                            <i class="fas fa-chart-bar fa-2x d-block mb-2"></i>
+                            Thống kê chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .opacity-50 {
+        opacity: 0.5;
+    }
+    
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
 
 <!-- Quick Actions -->
 <div class="row">
@@ -232,36 +328,54 @@
         function approveJob(jobId) {
             if (confirm('Bạn có chắc chắn muốn duyệt tin tuyển dụng này?')) {
                 $.ajax({
-                    url: '@Url.Action("ApproveJob", "Admin")/' + jobId,
+                    url: '@Url.Action("ApproveJob", "Admin")',
                     type: 'POST',
                     data: {
+                        jobId: jobId,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function(response) {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
                         if (response.success) {
+                            alert(response.message);
                             location.reload();
                         } else {
                             alert(response.message || 'Có lỗi xảy ra!');
                         }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', error);
+                        alert('Có lỗi xảy ra khi gọi server!');
                     }
                 });
             }
         }
-        
+
         function rejectJob(jobId) {
             if (confirm('Bạn có chắc chắn muốn từ chối tin tuyển dụng này?')) {
                 $.ajax({
-                    url: '@Url.Action("RejectJob", "Admin")/' + jobId,
+                    url: '@Url.Action("RejectJob", "Admin")',
                     type: 'POST',
                     data: {
+                        jobId: jobId,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function(response) {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
                         if (response.success) {
+                            alert(response.message);
                             location.reload();
                         } else {
                             alert(response.message || 'Có lỗi xảy ra!');
                         }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', error);
+                        alert('Có lỗi xảy ra khi gọi server!');
                     }
                 });
             }

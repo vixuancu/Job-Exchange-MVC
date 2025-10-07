@@ -23,15 +23,14 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        // Lấy 6 việc làm mới nhất
-        var jobs = await _jobService.GetAllJobsAsync();
-        var latestJobs = jobs.OrderByDescending(j => j.CreatedAt).Take(6);
+        // Lấy 6 việc làm mới nhất (page 1, pageSize 6)
+        var pagedJobs = await _jobService.GetAllJobsAsync(page: 1, pageSize: 6);
 
         // Lấy danh mục
         var categories = await _jobService.GetAllCategoriesAsync();
 
         ViewBag.Categories = categories;
-        return View(latestJobs);
+        return View(pagedJobs.Items); // Chỉ truyền Items (IEnumerable<JobDto>)
     }
 
     public IActionResult Privacy()

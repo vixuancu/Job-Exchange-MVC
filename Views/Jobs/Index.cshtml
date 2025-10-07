@@ -64,7 +64,14 @@
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 id="resultsCount">
-                @if (Model.Any())
+                @{
+                    var pagedResult = ViewBag.PagedResult as JobExchangeMvc.DTOs.PagedResultDto<JobExchangeMvc.DTOs.JobDto>;
+                }
+                @if (pagedResult != null && pagedResult.TotalItems > 0)
+                {
+                    <span>Tìm thấy <strong>@pagedResult.TotalItems</strong> việc làm</span>
+                }
+                else if (Model.Any())
                 {
                     <span>Tìm thấy <strong>@Model.Count()</strong> việc làm</span>
                 }
@@ -85,6 +92,14 @@
         <div id="jobsList">
             @await Html.PartialAsync("_JobListPartial", Model)
         </div>
+
+        <!-- ✅ Pagination Controls -->
+        @if (pagedResult != null && pagedResult.TotalPages > 1)
+        {
+            <div class="mt-4">
+                @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            </div>
+        }
     </div>
 </div>
 

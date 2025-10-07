@@ -27,17 +27,18 @@ public class JobsController : Controller
 
     // GET: Jobs
     [HttpGet]
-    public async Task<IActionResult> Index(string? searchTerm, int? categoryId, string? location)
+    public async Task<IActionResult> Index(string? searchTerm, int? categoryId, string? location, int page = 1)
     {
-        var jobs = await _jobService.GetAllJobsAsync(searchTerm, categoryId, location);
+        var pagedJobs = await _jobService.GetAllJobsAsync(page: page, pageSize: 10, searchTerm: searchTerm, categoryId: categoryId, location: location);
         var categories = await _jobService.GetAllCategoriesAsync();
 
         ViewBag.Categories = new SelectList(categories, "Id", "Name");
         ViewBag.SearchTerm = searchTerm;
         ViewBag.CategoryId = categoryId;
         ViewBag.Location = location;
+        ViewBag.PagedResult = pagedJobs; // ✅ Pass pagination info to view
 
-        return View(jobs);
+        return View(pagedJobs.Items); // ✅ Pass only Items to view
     }
 
     // GET: Jobs/Details/5
@@ -170,16 +171,47 @@ public class JobsController : Controller
     public async Task<IActionResult> Delete(int id)
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _jobService.DeleteJobAsync(id, userId);
 
-        if (!result)
+        try
         {
-            TempData["ErrorMessage"] = "Không thể xóa tin tuyển dụng";
+            var result = await _jobService.DeleteJobAsync(id, userId);
+
+            if (!result)
+            {
+                // Check if it's AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không thể xóa tin tuyển dụng. Tin không tồn tại hoặc bạn không có quyền xóa." });
+                }
+
+                TempData["ErrorMessage"] = "Không thể xóa tin tuyển dụng";
+                return RedirectToAction("MyJobs");
+            }
+
+            _logger.LogInformation("Job {JobId} deleted successfully by user {UserId}", id, userId);
+
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Xóa tin tuyển dụng thành công!" });
+            }
+
+            TempData["SuccessMessage"] = "Xóa tin tuyển dụng thành công!";
             return RedirectToAction("MyJobs");
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting job {JobId} by user {UserId}", id, userId);
 
-        TempData["SuccessMessage"] = "Xóa tin tuyển dụng thành công!";
-        return RedirectToAction("MyJobs");
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi xóa tin!" });
+            }
+
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa tin!";
+            return RedirectToAction("MyJobs");
+        }
     }
 
     // GET: Jobs/MyJobs
@@ -214,9 +246,9 @@ public class JobsController : Controller
 
     // AJAX: Search jobs
     [HttpGet]
-    public async Task<IActionResult> SearchPartial(string? searchTerm, int? categoryId, string? location)
+    public async Task<IActionResult> SearchPartial(string? searchTerm, int? categoryId, string? location, int page = 1)
     {
-        var jobs = await _jobService.GetAllJobsAsync(searchTerm, categoryId, location);
-        return PartialView("_JobListPartial", jobs);
+        var pagedJobs = await _jobService.GetAllJobsAsync(page: page, pageSize: 10, searchTerm: searchTerm, categoryId: categoryId, location: location);
+        return PartialView("_JobListPartial", pagedJobs.Items);
     }
 }

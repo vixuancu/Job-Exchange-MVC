@@ -28,11 +28,13 @@ public class ApplicationsController : Controller
     // GET: Applications/MyApplications
     [HttpGet]
     [Authorize(Roles = "Applicant")]
-    public async Task<IActionResult> MyApplications()
+    public async Task<IActionResult> MyApplications(int page = 1)
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var applications = await _applicationService.GetApplicationsByApplicantAsync(userId);
-        return View(applications);
+        var pagedApplications = await _applicationService.GetApplicationsByApplicantAsync(userId, page: page, pageSize: 10);
+
+        ViewBag.PagedResult = pagedApplications; // ✅ Pass pagination info to view
+        return View(pagedApplications.Items); // ✅ Pass only Items to view
     }
 
     // GET: Applications/Apply/5
@@ -128,8 +130,8 @@ public class ApplicationsController : Controller
         // Applicant can only view their own applications
         if (userRole == "Applicant")
         {
-            var myApplications = await _applicationService.GetApplicationsByApplicantAsync(userId);
-            if (!myApplications.Any(a => a.Id == id))
+            var myApplicationsPage = await _applicationService.GetApplicationsByApplicantAsync(userId, page: 1, pageSize: 1000);
+            if (!myApplicationsPage.Items.Any(a => a.Id == id))
             {
                 return Forbid();
             }
@@ -137,8 +139,8 @@ public class ApplicationsController : Controller
         // Employer can only view applications for their jobs
         else if (userRole == "Employer")
         {
-            var myApplications = await _applicationService.GetApplicationsByEmployerAsync(userId);
-            if (!myApplications.Any(a => a.Id == id))
+            var myApplicationsPage = await _applicationService.GetApplicationsByEmployerAsync(userId, page: 1, pageSize: 1000);
+            if (!myApplicationsPage.Items.Any(a => a.Id == id))
             {
                 return Forbid();
             }

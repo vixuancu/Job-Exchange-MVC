@@ -5,7 +5,12 @@ namespace JobExchangeMvc.Services.Interfaces;
 
 public interface IJobService
 {
-    Task<IEnumerable<JobDto>> GetAllJobsAsync(string? searchTerm = null, int? categoryId = null, string? location = null);
+    // Public Methods with Pagination
+    Task<PagedResultDto<JobDto>> GetAllJobsAsync(int page = 1, int pageSize = 10, string? searchTerm = null, int? categoryId = null, string? location = null);
+
+    // Admin Methods with Pagination
+    Task<PagedResultDto<JobDto>> GetAllJobsForAdminAsync(int page = 1, int pageSize = 20); // ✅ Admin: Lấy Jobs ACTIVE (IsActive = true)
+    Task<PagedResultDto<JobDto>> GetAllJobsIncludingDeletedAsync(int page = 1, int pageSize = 20); // ✅ NEW: Admin xem cả jobs đã xóa
     Task<JobDto?> GetJobByIdAsync(int id);
     Task<JobDto> CreateJobAsync(int employerId, JobDto jobDto);
     Task<bool> UpdateJobAsync(int jobId, int employerId, JobDto jobDto);
@@ -22,4 +27,5 @@ public interface IJobService
     Task<Category> CreateCategoryAsync(string name, string? description);
     Task<bool> UpdateCategoryAsync(int id, string name, string? description, bool isActive);
     Task<bool> ToggleCategoryStatusAsync(int id, bool isActive);
+    Task<bool> DeleteCategoryAsync(int id); // ✅ NEW: Delete category with validation
 }

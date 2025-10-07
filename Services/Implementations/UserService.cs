@@ -200,29 +200,70 @@ public class UserService : IUserService
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<ProfileDto>> GetAllUsersAsProfileDtoAsync()
+    /// <summary>
+    /// ✅ Admin: Lấy tất cả Users với Pagination
+    /// </summary>
+    public async Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 20)
     {
-        var users = await _context.Users
-            .Include(u => u.Company)
-            .OrderByDescending(u => u.CreatedAt)
-            .ToListAsync();
-
-        return users.Select(u => new ProfileDto
+        try
         {
-            Id = u.Id,
-            Email = u.Email,
-            FullName = u.FullName,
-            PhoneNumber = u.PhoneNumber,
-            Bio = u.Bio,
-            Skills = u.Skills,
-            AvatarUrl = u.AvatarUrl,
-            CvUrl = u.CvUrl,
-            Role = u.Role,
-            IsActive = u.IsActive,
-            CreatedAt = u.CreatedAt,
-            CompanyName = u.Company?.Name,
-            CompanyLogoUrl = u.Company?.LogoUrl
-        });
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var query = _context.Users
+                .Include(u => u.Company)
+                .OrderByDescending(u => u.CreatedAt);
+
+            // Count total items
+            var totalItems = await query.CountAsync();
+
+            // Apply pagination
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var profileDtos = users.Select(u => new ProfileDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                FullName = u.FullName,
+                PhoneNumber = u.PhoneNumber,
+                Bio = u.Bio,
+                Skills = u.Skills,
+                AvatarUrl = u.AvatarUrl,
+                CvUrl = u.CvUrl,
+                Role = u.Role,
+                IsActive = u.IsActive,
+                CreatedAt = u.CreatedAt,
+                CompanyName = u.Company?.Name,
+                CompanyLogoUrl = u.Company?.LogoUrl
+            }).ToList();
+
+            _logger.LogInformation("Retrieved {Count}/{Total} users (page {Page})",
+                profileDtos.Count, totalItems, page);
+
+            return new PagedResultDto<ProfileDto>
+            {
+                Items = profileDtos,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all users with pagination");
+            return new PagedResultDto<ProfileDto>
+            {
+                Items = new List<ProfileDto>(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = 0
+            };
+        }
     }
 
     public async Task<bool> UpdateUserStatusAsync(int userId, bool isActive)
@@ -276,6 +317,81 @@ public class UserService : IUserService
         {
             _logger.LogError(ex, "Error updating user role for user {UserId}", userId);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// ✅ FIX #3: Hard delete user (Admin only)
+    /// Cascade: Delete Company, Jobs, Applications
+    /// </summary>
+    public async Task<bool> DeleteUserAsync(int userId)
+    {
+        try
+        {
+            var user = await _context.Users
+                .Include(u => u.Company!)
+                    .ThenInclude(c => c.Jobs)
+                        .ThenInclude(j => j.Applications)
+                .Include(u => u.Applications)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                _logger.LogWarning("User {UserId} not found", userId);
+                return false;
+            }
+
+            // Prevent deleting Admin users
+            if (user.Role == "Admin")
+            {
+                _logger.LogWarning("Cannot delete Admin user {UserId}", userId);
+                throw new InvalidOperationException("Không thể xóa tài khoản quản trị viên");
+            }
+
+            // Cascade delete for Employer
+            if (user.Company != null)
+            {
+                // Delete all applications for employer's jobs
+                var allApplications = user.Company.Jobs
+                    .SelectMany(j => j.Applications)
+                    .ToList();
+
+                if (allApplications.Any())
+                {
+                    _context.Applications.RemoveRange(allApplications);
+                    _logger.LogInformation("Deleting {Count} applications for employer {UserId}", allApplications.Count, userId);
+                }
+
+                // Delete all jobs
+                if (user.Company.Jobs.Any())
+                {
+                    _context.Jobs.RemoveRange(user.Company.Jobs);
+                    _logger.LogInformation("Deleting {Count} jobs for employer {UserId}", user.Company.Jobs.Count, userId);
+                }
+
+                // Delete company
+                _context.Companies.Remove(user.Company);
+                _logger.LogInformation("Deleting company for employer {UserId}", userId);
+            }
+
+            // Cascade delete for Applicant
+            if (user.Applications.Any())
+            {
+                _context.Applications.RemoveRange(user.Applications);
+                _logger.LogInformation("Deleting {Count} applications for applicant {UserId}", user.Applications.Count, userId);
+            }
+
+            // Delete user
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("User deleted successfully: {UserId} - {Email} - {Role}", userId, user.Email, user.Role);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user {UserId}", userId);
+            throw;
         }
     }
 }

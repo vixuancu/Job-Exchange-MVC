@@ -10,8 +10,11 @@ public interface IUserService
     Task<ProfileDto?> GetProfileAsync(int userId);
     Task<bool> UpdateProfileAsync(int userId, ProfileDto profileDto);
     Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
+
+    // Admin Methods with Pagination
     Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<IEnumerable<ProfileDto>> GetAllUsersAsProfileDtoAsync();
+    Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 20);
     Task<bool> UpdateUserStatusAsync(int userId, bool isActive);
     Task<bool> UpdateUserRoleAsync(int userId, string role);
+    Task<bool> DeleteUserAsync(int userId); // ✅ NEW: Hard delete user (admin only)
 }

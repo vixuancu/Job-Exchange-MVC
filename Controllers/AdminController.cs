@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using JobExchangeMvc.Services.Interfaces;
+using JobExchangeMvc.DTOs;
 
 namespace JobExchangeMvc.Controllers;
 
@@ -31,24 +32,81 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Dashboard()
     {
-        var users = await _userService.GetAllUsersAsync();
-        var jobs = await _jobService.GetAllJobsAsync();
+        try
+        {
+            // ✅ FIX #11: Comprehensive Dashboard Statistics
+            var users = await _userService.GetAllUsersAsync();
+            var pagedJobs = await _jobService.GetAllJobsForAdminAsync(page: 1, pageSize: 10000);
+            var jobs = pagedJobs.Items.ToList();
+            var applications = (await _applicationService.GetAllApplicationsForAdminAsync()).ToList();
 
-        ViewBag.TotalUsers = users.Count();
-        ViewBag.TotalEmployers = users.Count(u => u.Role == "Employer");
-        ViewBag.TotalApplicants = users.Count(u => u.Role == "Applicant");
-        ViewBag.TotalJobs = jobs.Count();
-        ViewBag.PendingJobs = jobs.Count(j => j.Status == "Pending");
-        ViewBag.ApprovedJobs = jobs.Count(j => j.Status == "Approved");
+            var now = DateTime.UtcNow;
+            var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
 
-        return View();
+            var stats = new AdminDashboardStatsDto
+            {
+                // User Statistics
+                TotalUsers = users.Count(),
+                TotalAdmins = users.Count(u => u.Role == "Admin"),
+                TotalEmployers = users.Count(u => u.Role == "Employer"),
+                TotalApplicants = users.Count(u => u.Role == "Applicant"),
+                ActiveUsers = users.Count(u => u.IsActive),
+                InactiveUsers = users.Count(u => !u.IsActive),
+                NewUsersThisMonth = users.Count(u => u.CreatedAt >= firstDayOfMonth),
+
+                // Job Statistics - Breakdown by Status
+                TotalJobs = jobs.Count,
+                PendingJobs = jobs.Count(j => j.Status == "Pending"),
+                ApprovedJobs = jobs.Count(j => j.Status == "Approved"),
+                RejectedJobs = jobs.Count(j => j.Status == "Rejected"),
+                ClosedJobs = jobs.Count(j => j.Status == "Closed"),
+                ExpiredJobs = jobs.Count(j => j.Status == "Expired"),
+                NewJobsThisMonth = jobs.Count(j => j.CreatedAt >= firstDayOfMonth),
+                TotalViews = jobs.Sum(j => j.ViewCount),
+
+                // Application Statistics - Breakdown by Status
+                TotalApplications = applications.Count,
+                PendingApplications = applications.Count(a => a.Status == "Pending"),
+                ApprovedApplications = applications.Count(a => a.Status == "Approved"),
+                InterviewingApplications = applications.Count(a => a.Status == "Interviewing"),
+                AcceptedApplications = applications.Count(a => a.Status == "Accepted"),
+                RejectedApplications = applications.Count(a => a.Status == "Rejected"),
+                CancelledApplications = applications.Count(a => a.Status == "Cancelled"),
+                NewApplicationsThisMonth = applications.Count(a => a.AppliedAt >= firstDayOfMonth),
+
+                // Top Categories (Top 5)
+                TopCategories = jobs
+                    .Where(j => !string.IsNullOrEmpty(j.CategoryName))
+                    .GroupBy(j => j.CategoryName!)
+                    .OrderByDescending(g => g.Count())
+                    .Take(5)
+                    .ToDictionary(g => g.Key, g => g.Count()),
+
+                // Top Companies (Top 5 by job count)
+                TopCompanies = jobs
+                    .Where(j => !string.IsNullOrEmpty(j.CompanyName))
+                    .GroupBy(j => j.CompanyName!)
+                    .OrderByDescending(g => g.Count())
+                    .Take(5)
+                    .ToDictionary(g => g.Key, g => g.Count())
+            };
+
+            return View(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading admin dashboard");
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải dashboard";
+            return View(new AdminDashboardStatsDto());
+        }
     }
 
     // GET: Admin/Users
     [HttpGet]
-    public async Task<IActionResult> Users(string? role, string? status)
+    public async Task<IActionResult> Users(string? role, string? status, int page = 1)
     {
-        var users = await _userService.GetAllUsersAsProfileDtoAsync();
+        var pagedUsers = await _userService.GetAllUsersAsProfileDtoAsync(page: page, pageSize: 20);
+        var users = pagedUsers.Items.AsEnumerable(); // Convert to IEnumerable for LINQ filtering
 
         // Filter by role
         if (!string.IsNullOrEmpty(role))
@@ -71,6 +129,7 @@ public class AdminController : Controller
 
         ViewBag.SelectedRole = role;
         ViewBag.SelectedStatus = status;
+        ViewBag.PagedResult = pagedUsers; // ✅ Pass pagination info
 
         return View(users);
     }
@@ -115,9 +174,11 @@ public class AdminController : Controller
 
     // GET: Admin/Jobs
     [HttpGet]
-    public async Task<IActionResult> Jobs(string? status)
+    public async Task<IActionResult> Jobs(string? status, int page = 1)
     {
-        var allJobs = await _jobService.GetAllJobsAsync();
+        // ✅ Dùng GetAllJobsForAdminAsync() để lấy TẤT CẢ Jobs (all Status) với pagination
+        var pagedJobs = await _jobService.GetAllJobsForAdminAsync(page: page, pageSize: 20);
+        var allJobs = pagedJobs.Items.AsEnumerable();
 
         // Filter by status if provided
         var jobs = string.IsNullOrEmpty(status)
@@ -125,6 +186,7 @@ public class AdminController : Controller
             : allJobs.Where(j => j.Status == status);
 
         ViewBag.SelectedStatus = status;
+        ViewBag.PagedResult = pagedJobs; // ✅ Pass pagination info
         return View(jobs);
     }
 
@@ -133,18 +195,46 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveJob(int jobId)
     {
-        var result = await _jobService.UpdateJobStatusAsync(jobId, "Approved");
+        try
+        {
+            var result = await _jobService.UpdateJobStatusAsync(jobId, "Approved");
 
-        if (!result)
-        {
-            TempData["ErrorMessage"] = "Không thể duyệt tin tuyển dụng";
-        }
-        else
-        {
+            if (!result)
+            {
+                // Check if it's AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không thể duyệt tin tuyển dụng. Tin không tồn tại." });
+                }
+
+                TempData["ErrorMessage"] = "Không thể duyệt tin tuyển dụng. Tin không tồn tại.";
+                return RedirectToAction("Jobs");
+            }
+
+            _logger.LogInformation("Job {JobId} approved successfully", jobId);
+
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Duyệt tin tuyển dụng thành công!" });
+            }
+
             TempData["SuccessMessage"] = "Duyệt tin tuyển dụng thành công!";
+            return RedirectToAction("Jobs");
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving job {JobId}", jobId);
 
-        return RedirectToAction("Jobs");
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi duyệt tin!" });
+            }
+
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi duyệt tin!";
+            return RedirectToAction("Jobs");
+        }
     }
 
     // POST: Admin/RejectJob
@@ -152,18 +242,46 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RejectJob(int jobId)
     {
-        var result = await _jobService.UpdateJobStatusAsync(jobId, "Rejected");
+        try
+        {
+            var result = await _jobService.UpdateJobStatusAsync(jobId, "Rejected");
 
-        if (!result)
-        {
-            TempData["ErrorMessage"] = "Không thể từ chối tin tuyển dụng";
-        }
-        else
-        {
+            if (!result)
+            {
+                // Check if it's AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không thể từ chối tin tuyển dụng. Tin không tồn tại." });
+                }
+
+                TempData["ErrorMessage"] = "Không thể từ chối tin tuyển dụng. Tin không tồn tại.";
+                return RedirectToAction("Jobs");
+            }
+
+            _logger.LogInformation("Job {JobId} rejected successfully", jobId);
+
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Từ chối tin tuyển dụng thành công!" });
+            }
+
             TempData["SuccessMessage"] = "Từ chối tin tuyển dụng thành công!";
+            return RedirectToAction("Jobs");
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting job {JobId}", jobId);
 
-        return RedirectToAction("Jobs");
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi từ chối tin!" });
+            }
+
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi từ chối tin!";
+            return RedirectToAction("Jobs");
+        }
     }
 
     // GET: Admin/Categories
@@ -265,7 +383,8 @@ public class AdminController : Controller
     public async Task<IActionResult> Statistics()
     {
         var users = await _userService.GetAllUsersAsync();
-        var jobs = await _jobService.GetAllJobsAsync();
+        var pagedJobs = await _jobService.GetAllJobsForAdminAsync(page: 1, pageSize: 10000); // Large pageSize để lấy tất cả cho stats
+        var jobs = pagedJobs.Items;
 
         var stats = new
         {

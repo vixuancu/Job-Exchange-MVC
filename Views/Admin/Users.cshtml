@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Quản lý người dùng";
+    var pagedResult = ViewBag.PagedResult as JobExchangeMvc.DTOs.PagedResultDto<JobExchangeMvc.DTOs.ProfileDto>;
 }
 
 <div class="container-fluid">
@@ -159,4 +160,12 @@
             }
         </div>
     </div>
+
+    <!-- ✅ Pagination Controls -->
+    @if (pagedResult != null && pagedResult.TotalPages > 1)
+    {
+        <div class="mt-4">
+            @await Html.PartialAsync("_PaginationPartial", pagedResult)
+        </div>
+    }
 </div>

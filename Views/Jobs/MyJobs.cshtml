@@ -147,20 +147,31 @@ else
 }
 
 @section Scripts {
+    @Html.AntiForgeryToken()
     <script>
         function deleteJob(jobId) {
-            if (confirm('Bạn có chắc chắn muốn xóa tin tuyển dụng này?')) {
+            if (confirm('Bạn có chắc chắn muốn xóa tin tuyển dụng này? Hành động này không thể hoàn tác!')) {
                 $.ajax({
-                    url: '@Url.Action("Delete", "Jobs")/' + jobId,
+                    url: '@Url.Action("Delete", "Jobs")',
                     type: 'POST',
                     data: {
+                        id: jobId,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function() {
-                        location.reload();
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    error: function() {
-                        alert('Có lỗi xảy ra. Vui lòng thử lại!');
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert(response.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', error);
+                        alert('Có lỗi xảy ra khi gọi server. Vui lòng thử lại!');
                     }
                 });
             }

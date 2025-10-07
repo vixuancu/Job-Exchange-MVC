@@ -17,10 +17,18 @@ public class JobService : IJobService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<JobDto>> GetAllJobsAsync(string? searchTerm = null, int? categoryId = null, string? location = null)
+    /// <summary>
+    /// ✅ Public: Lấy Jobs đã duyệt với Pagination
+    /// </summary>
+    public async Task<PagedResultDto<JobDto>> GetAllJobsAsync(int page = 1, int pageSize = 10, string? searchTerm = null, int? categoryId = null, string? location = null)
     {
         try
         {
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100; // Max 100 items per page
+
             var query = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
@@ -46,8 +54,14 @@ public class JobService : IJobService
                 query = query.Where(j => j.Location != null && j.Location.Contains(location));
             }
 
+            // Count total items BEFORE pagination
+            var totalItems = await query.CountAsync();
+
+            // Apply pagination: Skip + Take
             var jobs = await query
                 .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(j => new JobDto
                 {
                     Id = j.Id,
@@ -72,12 +86,175 @@ public class JobService : IJobService
                 })
                 .ToListAsync();
 
-            return jobs;
+            _logger.LogInformation("Retrieved page {Page}/{TotalPages} with {Count}/{Total} jobs",
+                page, (int)Math.Ceiling((double)totalItems / pageSize), jobs.Count, totalItems);
+
+            return new PagedResultDto<JobDto>
+            {
+                Items = jobs,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting jobs");
-            return new List<JobDto>();
+            _logger.LogError(ex, "Error getting jobs with pagination");
+            return new PagedResultDto<JobDto>
+            {
+                Items = new List<JobDto>(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = 0
+            };
+        }
+    }
+
+    /// <summary>
+    /// ✅ Admin: Lấy Jobs ĐANG HOẠT ĐỘNG (IsActive = true) với Pagination
+    /// Bao gồm tất cả Status: Pending, Approved, Rejected, Closed, Expired
+    /// Loại trừ: Jobs đã bị soft delete (IsActive = false)
+    /// </summary>
+    public async Task<PagedResultDto<JobDto>> GetAllJobsForAdminAsync(int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var query = _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Where(j => j.IsActive); // ✅ FIX #1: Chỉ lấy jobs đang active (mặc định)
+
+            // Count total items
+            var totalItems = await query.CountAsync();
+
+            // Apply pagination
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(j => new JobDto
+                {
+                    Id = j.Id,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Benefits = j.Benefits,
+                    SalaryRange = j.SalaryRange,
+                    Location = j.Location,
+                    JobType = j.JobType,
+                    NumberOfPositions = j.NumberOfPositions,
+                    ApplicationDeadline = j.ApplicationDeadline,
+                    Status = j.Status,
+                    IsActive = j.IsActive,
+                    ViewCount = j.ViewCount,
+                    CompanyId = j.CompanyId,
+                    CompanyName = j.Company.Name,
+                    CompanyLogoUrl = j.Company.LogoUrl,
+                    CategoryId = j.CategoryId,
+                    CategoryName = j.Category.Name,
+                    CreatedAt = j.CreatedAt
+                })
+                .ToListAsync();
+
+            _logger.LogInformation("Retrieved {Count}/{Total} active jobs for admin (page {Page})",
+                jobs.Count, totalItems, page);
+
+            return new PagedResultDto<JobDto>
+            {
+                Items = jobs,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all jobs for admin");
+            return new PagedResultDto<JobDto>
+            {
+                Items = new List<JobDto>(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = 0
+            };
+        }
+    }
+
+    /// <summary>
+    /// ✅ NEW: Admin xem TẤT CẢ Jobs kể cả đã xóa (IsActive = false) với Pagination
+    /// </summary>
+    public async Task<PagedResultDto<JobDto>> GetAllJobsIncludingDeletedAsync(int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var query = _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category);
+            // KHÔNG filter IsActive → Lấy cả jobs đã xóa
+
+            // Count total items
+            var totalItems = await query.CountAsync();
+
+            // Apply pagination
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(j => new JobDto
+                {
+                    Id = j.Id,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Benefits = j.Benefits,
+                    SalaryRange = j.SalaryRange,
+                    Location = j.Location,
+                    JobType = j.JobType,
+                    NumberOfPositions = j.NumberOfPositions,
+                    ApplicationDeadline = j.ApplicationDeadline,
+                    Status = j.Status,
+                    IsActive = j.IsActive,
+                    ViewCount = j.ViewCount,
+                    CompanyId = j.CompanyId,
+                    CompanyName = j.Company.Name,
+                    CompanyLogoUrl = j.Company.LogoUrl,
+                    CategoryId = j.CategoryId,
+                    CategoryName = j.Category.Name,
+                    CreatedAt = j.CreatedAt
+                })
+                .ToListAsync();
+
+            _logger.LogInformation("Retrieved {Count}/{Total} jobs for admin including deleted (page {Page})",
+                jobs.Count, totalItems, page);
+
+            return new PagedResultDto<JobDto>
+            {
+                Items = jobs,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all jobs including deleted");
+            return new PagedResultDto<JobDto>
+            {
+                Items = new List<JobDto>(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = 0
+            };
         }
     }
 
@@ -134,13 +311,36 @@ public class JobService : IJobService
     {
         try
         {
-            // Get employer's company
+            // ✅ FIX #10: Enhanced Company validation
             var company = await _context.Companies
                 .FirstOrDefaultAsync(c => c.EmployerId == employerId);
 
             if (company == null)
             {
-                throw new InvalidOperationException("Employer must have a company to create jobs");
+                throw new InvalidOperationException("Bạn cần tạo hồ sơ công ty trước khi đăng tin tuyển dụng. Vui lòng hoàn thiện thông tin công ty trong phần Hồ sơ.");
+            }
+
+            // Validate company has required information
+            if (string.IsNullOrWhiteSpace(company.Name))
+            {
+                throw new InvalidOperationException("Tên công ty không được để trống. Vui lòng cập nhật thông tin công ty.");
+            }
+
+            if (string.IsNullOrWhiteSpace(company.Description))
+            {
+                throw new InvalidOperationException("Mô tả công ty không được để trống. Vui lòng bổ sung thông tin để tăng độ tin cậy với ứng viên.");
+            }
+
+            if (string.IsNullOrWhiteSpace(company.Address) || string.IsNullOrWhiteSpace(company.City))
+            {
+                throw new InvalidOperationException("Địa chỉ công ty không đầy đủ. Vui lòng cập nhật địa chỉ và thành phố.");
+            }
+
+            // Validate category exists and is active
+            var category = await _context.Categories.FindAsync(jobDto.CategoryId);
+            if (category == null || !category.IsActive)
+            {
+                throw new InvalidOperationException("Danh mục công việc không hợp lệ hoặc đã bị vô hiệu hóa. Vui lòng chọn danh mục khác.");
             }
 
             var job = new Job
@@ -228,26 +428,49 @@ public class JobService : IJobService
     {
         try
         {
+            // ✅ FIX: Use simple Include for ownership check
             var job = await _context.Jobs
                 .Include(j => j.Company)
-                .FirstOrDefaultAsync(j => j.Id == jobId && j.Company.EmployerId == employerId);
+                .Include(j => j.Applications) // ✅ Load Applications để cascade
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.Company.EmployerId == employerId && j.IsActive);
 
             if (job == null)
             {
+                _logger.LogWarning("Job {JobId} not found, already deleted, or user {EmployerId} does not have permission", jobId, employerId);
                 return false;
             }
 
-            // Soft delete
+            // ✅ FIX #1: Soft delete - Set IsActive = false + Status = "Closed"
             job.IsActive = false;
+            job.Status = "Closed";
             job.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Job deleted successfully: {JobId}", jobId);
-            return true;
+            // ✅ FIX #7: Cascade to Applications - Reject tất cả applications đang Pending
+            var pendingApplications = job.Applications.Where(a => a.Status == "Pending").ToList();
+            foreach (var app in pendingApplications)
+            {
+                app.Status = "Rejected";
+                app.ReviewedAt = DateTime.UtcNow;
+                app.Note = "Tin tuyển dụng đã bị đóng bởi nhà tuyển dụng";
+            }
+
+            var changes = await _context.SaveChangesAsync();
+
+            if (changes > 0)
+            {
+                _logger.LogInformation("Job {JobId} closed successfully by employer {EmployerId}. {Count} pending applications rejected.",
+                    jobId, employerId, pendingApplications.Count);
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("No changes were saved when deleting job {JobId}", jobId);
+                return false;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting job {JobId}", jobId);
+            _logger.LogError(ex, "Error deleting job {JobId} for employer {EmployerId}", jobId, employerId);
             return false;
         }
     }
@@ -260,7 +483,7 @@ public class JobService : IJobService
                 .Include(j => j.Company)
                 .Include(j => j.Category)
                 .Include(j => j.Applications)
-                .Where(j => j.Company.EmployerId == employerId)
+                .Where(j => j.Company.EmployerId == employerId && j.IsActive) // ✅ FIX: Only show active jobs
                 .OrderByDescending(j => j.CreatedAt)
                 .Select(j => new JobDto
                 {
@@ -342,12 +565,41 @@ public class JobService : IJobService
             var job = await _context.Jobs.FindAsync(jobId);
             if (job == null)
             {
+                _logger.LogWarning("Job {JobId} not found", jobId);
                 return false;
             }
 
-            // Validate status
-            if (status != "Pending" && status != "Approved" && status != "Rejected" && status != "Closed")
+            // ✅ FIX #6: Validate status transitions (State Machine)
+            var currentStatus = job.Status;
+
+            // Validate status value
+            var validStatuses = new[] { "Pending", "Approved", "Rejected", "Closed", "Expired" };
+            if (!validStatuses.Contains(status))
             {
+                _logger.LogWarning("Invalid status: {Status}", status);
+                return false;
+            }
+
+            // Define allowed transitions
+            var allowedTransitions = new Dictionary<string, string[]>
+            {
+                ["Pending"] = new[] { "Approved", "Rejected" },
+                ["Approved"] = new[] { "Closed", "Expired" },
+                ["Rejected"] = Array.Empty<string>(), // Terminal state
+                ["Closed"] = Array.Empty<string>(),   // Terminal state
+                ["Expired"] = Array.Empty<string>()   // Terminal state
+            };
+
+            // Check if transition is allowed
+            if (!allowedTransitions.ContainsKey(currentStatus))
+            {
+                _logger.LogWarning("Unknown current status: {CurrentStatus}", currentStatus);
+                return false;
+            }
+
+            if (!allowedTransitions[currentStatus].Contains(status))
+            {
+                _logger.LogWarning("Invalid status transition: {CurrentStatus} -> {NewStatus}", currentStatus, status);
                 return false;
             }
 
@@ -355,7 +607,7 @@ public class JobService : IJobService
             job.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Job status updated: {JobId} - Status: {Status}", jobId, status);
+            _logger.LogInformation("Job status updated: {JobId} - {CurrentStatus} -> {NewStatus}", jobId, currentStatus, status);
             return true;
         }
         catch (Exception ex)
@@ -475,6 +727,46 @@ public class JobService : IJobService
         {
             _logger.LogError(ex, "Error toggling category status {CategoryId}", id);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// ✅ FIX #8: Delete category with validation
+    /// Chỉ cho phép xóa nếu không có jobs đang active
+    /// </summary>
+    public async Task<bool> DeleteCategoryAsync(int id)
+    {
+        try
+        {
+            var category = await _context.Categories
+                .Include(c => c.Jobs)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (category == null)
+            {
+                _logger.LogWarning("Category {CategoryId} not found", id);
+                return false;
+            }
+
+            // Check if category has active jobs
+            var activeJobsCount = category.Jobs.Count(j => j.IsActive);
+            if (activeJobsCount > 0)
+            {
+                _logger.LogWarning("Cannot delete category {CategoryId}: has {Count} active jobs", id, activeJobsCount);
+                throw new InvalidOperationException($"Không thể xóa danh mục này vì còn {activeJobsCount} tin tuyển dụng đang hoạt động. Vui lòng vô hiệu hóa hoặc chuyển các tin sang danh mục khác trước.");
+            }
+
+            // Safe to delete
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Category deleted successfully: {CategoryId} - {CategoryName}", id, category.Name);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting category {CategoryId}", id);
+            throw;
         }
     }
 }
