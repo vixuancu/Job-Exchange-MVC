@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Application> Applications { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<JobView> JobViews { get; set; } // ✅ FIX #14: Job view tracking
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +86,24 @@ public class ApplicationDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.Token);
+        });
+
+        // ✅ FIX #14: JobView configuration
+        modelBuilder.Entity<JobView>(entity =>
+        {
+            entity.HasOne(e => e.Job)
+                  .WithMany()
+                  .HasForeignKey(e => e.JobId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // Index for performance (query by JobId, UserId, ViewedAt)
+            entity.HasIndex(e => new { e.JobId, e.UserId, e.ViewedAt });
+            entity.HasIndex(e => new { e.JobId, e.IpAddress, e.ViewedAt });
         });
     }
 }

@@ -105,33 +105,14 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Users(string? role, string? status, int page = 1)
     {
-        var pagedUsers = await _userService.GetAllUsersAsProfileDtoAsync(page: page, pageSize: 20);
-        var users = pagedUsers.Items.AsEnumerable(); // Convert to IEnumerable for LINQ filtering
-
-        // Filter by role
-        if (!string.IsNullOrEmpty(role))
-        {
-            users = users.Where(u => u.Role == role);
-        }
-
-        // Filter by status
-        if (!string.IsNullOrEmpty(status))
-        {
-            if (status == "active")
-            {
-                users = users.Where(u => u.IsActive);
-            }
-            else if (status == "inactive")
-            {
-                users = users.Where(u => !u.IsActive);
-            }
-        }
+        // ✅ FIX: Apply filters in service layer BEFORE pagination
+        var pagedUsers = await _userService.GetAllUsersAsProfileDtoAsync(page: page, pageSize: 10, role: role, status: status);
 
         ViewBag.SelectedRole = role;
         ViewBag.SelectedStatus = status;
-        ViewBag.PagedResult = pagedUsers; // ✅ Pass pagination info
+        ViewBag.PagedResult = pagedUsers;
 
-        return View(users);
+        return View(pagedUsers.Items);
     }
 
     // POST: Admin/UpdateUserStatus
@@ -176,18 +157,13 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Jobs(string? status, int page = 1)
     {
-        // ✅ Dùng GetAllJobsForAdminAsync() để lấy TẤT CẢ Jobs (all Status) với pagination
-        var pagedJobs = await _jobService.GetAllJobsForAdminAsync(page: page, pageSize: 20);
-        var allJobs = pagedJobs.Items.AsEnumerable();
-
-        // Filter by status if provided
-        var jobs = string.IsNullOrEmpty(status)
-            ? allJobs
-            : allJobs.Where(j => j.Status == status);
+        // ✅ FIX: Apply status filter in service layer BEFORE pagination
+        var pagedJobs = await _jobService.GetAllJobsForAdminAsync(page: page, pageSize: 10, status: status);
 
         ViewBag.SelectedStatus = status;
-        ViewBag.PagedResult = pagedJobs; // ✅ Pass pagination info
-        return View(jobs);
+        ViewBag.PagedResult = pagedJobs;
+
+        return View(pagedJobs.Items);
     }
 
     // POST: Admin/ApproveJob
@@ -396,5 +372,60 @@ public class AdminController : Controller
         };
 
         return View(stats);
+    }
+
+    // ✅ FIX #2: POST: Admin/ExpireJobs - Manually trigger job expiration
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ExpireJobs()
+    {
+        try
+        {
+            var expiredCount = await _jobService.ExpireJobsPastDeadlineAsync();
+
+            if (expiredCount > 0)
+            {
+                TempData["SuccessMessage"] = $"Đã tự động đóng {expiredCount} tin tuyển dụng quá hạn!";
+            }
+            else
+            {
+                TempData["InfoMessage"] = "Không có tin tuyển dụng nào quá hạn.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error expiring jobs");
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi đóng tin tuyển dụng quá hạn";
+        }
+
+        return RedirectToAction("Jobs");
+    }
+
+    // ✅ NEW: POST: Admin/HardDeleteJob - XÓA HẰN job khỏi database
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HardDeleteJob(int jobId)
+    {
+        try
+        {
+            var result = await _jobService.HardDeleteJobAsync(jobId);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Đã xóa vĩnh viễn tin tuyển dụng khỏi hệ thống!";
+                _logger.LogInformation("Admin hard deleted job {JobId}", jobId);
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy tin tuyển dụng để xóa";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard deleting job {JobId}", jobId);
+            TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa tin tuyển dụng!";
+        }
+
+        return RedirectToAction("Jobs");
     }
 }

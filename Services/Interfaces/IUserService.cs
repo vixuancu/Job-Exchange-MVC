@@ -13,7 +13,7 @@ public interface IUserService
 
     // Admin Methods with Pagination
     Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 20);
+    Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 10, string? role = null, string? status = null);
     Task<bool> UpdateUserStatusAsync(int userId, bool isActive);
     Task<bool> UpdateUserRoleAsync(int userId, string role);
     Task<bool> DeleteUserAsync(int userId); // ✅ NEW: Hard delete user (admin only)

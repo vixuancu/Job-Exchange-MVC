@@ -48,6 +48,16 @@
                         <option value="inactive" selected="@(ViewBag.SelectedStatus == "inactive")">Đã khóa</option>
                     </select>
                 </div>
+                <div class="col-md-6">
+                    @if (pagedResult != null)
+                    {
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            Tìm thấy <strong>@pagedResult.TotalItems</strong> người dùng
+                            (Trang <strong>@pagedResult.CurrentPage</strong>/<strong>@pagedResult.TotalPages</strong>)
+                        </div>
+                    }
+                </div>
             </form>
         </div>
     </div>
@@ -162,10 +172,21 @@
     </div>
 
     <!-- ✅ Pagination Controls -->
-    @if (pagedResult != null && pagedResult.TotalPages > 1)
+    @if (pagedResult != null)
     {
         <div class="mt-4">
-            @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            @if (pagedResult.TotalPages > 1)
+            {
+                @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            }
+            else
+            {
+                <div class="text-center text-muted">
+                    <small>
+                        Hiển thị tất cả <strong>@pagedResult.TotalItems</strong> kết quả
+                    </small>
+                </div>
+            }
         </div>
     }
 </div>

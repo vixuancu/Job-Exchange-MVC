@@ -8,6 +8,15 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-briefcase"></i> Quản lý tin tuyển dụng</h2>
+
+        <!-- ✅ FIX #2: Button trigger batch expire -->
+        <form method="post" asp-action="ExpireJobs"
+            onsubmit="return confirm('Tự động đóng tất cả tin tuyển dụng quá hạn?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-warning">
+                <i class="fas fa-clock"></i> Đóng tin quá hạn
+            </button>
+        </form>
     </div>
 
     <!-- Filter -->
@@ -23,6 +32,16 @@
                         <option value="Rejected" selected="@(ViewBag.SelectedStatus == "Rejected")">Từ chối</option>
                         <option value="Closed" selected="@(ViewBag.SelectedStatus == "Closed")">Đã đóng</option>
                     </select>
+                </div>
+                <div class="col-md-9">
+                    @if (pagedResult != null)
+                    {
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            Tìm thấy <strong>@pagedResult.TotalItems</strong> tin tuyển dụng
+                            (Trang <strong>@pagedResult.CurrentPage</strong>/<strong>@pagedResult.TotalPages</strong>)
+                        </div>
+                    }
                 </div>
             </form>
         </div>
@@ -87,8 +106,8 @@
                                         <form asp-action="ApproveJob" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="jobId" value="@job.Id" />
-                                            <button type="submit" class="btn btn-success btn-sm" 
-                                                    onclick="return confirm('Xác nhận duyệt tin này?')">
+                                            <button type="submit" class="btn btn-success btn-sm"
+                                                onclick="return confirm('Xác nhận duyệt tin này?')">
                                                 <i class="fas fa-check"></i> Duyệt
                                             </button>
                                         </form>
@@ -96,11 +115,21 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="jobId" value="@job.Id" />
                                             <button type="submit" class="btn btn-danger btn-sm"
-                                                    onclick="return confirm('Xác nhận từ chối tin này?')">
+                                                onclick="return confirm('Xác nhận từ chối tin này?')">
                                                 <i class="fas fa-times"></i> Từ chối
                                             </button>
                                         </form>
                                     }
+
+                                    <!-- ✅ NEW: Hard Delete Button (Admin only) -->
+                                    <form asp-action="HardDeleteJob" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="jobId" value="@job.Id" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('⚠️ CẢNH BÁO: Xóa vĩnh viễn tin này khỏi database?\n\nHành động này KHÔNG THỂ HOÀN TÁC!\n\n✅ Xác nhận xóa?')">
+                                            <i class="fas fa-trash-alt"></i> Xóa
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
@@ -119,10 +148,21 @@
     </div>
 
     <!-- ✅ Pagination Controls -->
-    @if (pagedResult != null && pagedResult.TotalPages > 1)
+    @if (pagedResult != null)
     {
         <div class="mt-4">
-            @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            @if (pagedResult.TotalPages > 1)
+            {
+                @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            }
+            else
+            {
+                <div class="text-center text-muted">
+                    <small>
+                        Hiển thị tất cả <strong>@pagedResult.TotalItems</strong> kết quả
+                    </small>
+                </div>
+            }
         </div>
     }
 </div>
@@ -130,7 +170,7 @@
 @section Scripts {
     <script>
         // Auto reload on status change
-        document.querySelector('select[name="status"]').addEventListener('change', function() {
+        document.querySelector('select[name="status"]').addEventListener('change', function () {
             this.form.submit();
         });
     </script>

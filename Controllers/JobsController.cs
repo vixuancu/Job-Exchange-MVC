@@ -52,14 +52,22 @@ public class JobsController : Controller
             return NotFound();
         }
 
-        // Increment view count
-        await _jobService.IncrementViewCountAsync(id);
+        // ✅ FIX #14: Increment view count with unique tracking
+        int? userId = null;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var userAgent = Request.Headers["User-Agent"].ToString();
+
+        await _jobService.IncrementViewCountAsync(id, userId, ipAddress, userAgent);
 
         // Check if user has already applied
         if (User.Identity?.IsAuthenticated == true && User.IsInRole("Applicant"))
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-            ViewBag.HasApplied = await _applicationService.HasAppliedAsync(userId, id);
+            ViewBag.HasApplied = await _applicationService.HasAppliedAsync(userId!.Value, id);
         }
 
         return View(job);
@@ -217,17 +225,22 @@ public class JobsController : Controller
     // GET: Jobs/MyJobs
     [HttpGet]
     [Authorize(Roles = "Employer")]
-    public async Task<IActionResult> MyJobs()
+    public async Task<IActionResult> MyJobs(int page = 1)
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var jobs = await _jobService.GetJobsByEmployerAsync(userId);
-        return View(jobs);
+
+        // ✅ FIX: Use pagination
+        var pagedJobs = await _jobService.GetJobsByEmployerWithPaginationAsync(userId, page: page, pageSize: 10);
+
+        ViewBag.PagedResult = pagedJobs;
+
+        return View(pagedJobs.Items);
     }
 
     // GET: Jobs/Applicants/5
     [HttpGet]
     [Authorize(Roles = "Employer")]
-    public async Task<IActionResult> Applicants(int id)
+    public async Task<IActionResult> Applicants(int id, int page = 1)
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
         var jobs = await _jobService.GetJobsByEmployerAsync(userId);
@@ -238,10 +251,13 @@ public class JobsController : Controller
             return NotFound();
         }
 
-        var applications = await _applicationService.GetApplicationsByJobAsync(id);
+        // ✅ FIX: GetApplicationsByJobAsync now returns PagedResultDto
+        var pagedApplications = await _applicationService.GetApplicationsByJobAsync(id, page: page, pageSize: 20);
 
         ViewBag.Job = job;
-        return View(applications);
+        ViewBag.PagedResult = pagedApplications;
+
+        return View(pagedApplications.Items);
     }
 
     // AJAX: Search jobs

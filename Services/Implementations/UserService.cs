@@ -201,9 +201,9 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// ✅ Admin: Lấy tất cả Users với Pagination
+    /// ✅ Admin: Lấy tất cả Users với Pagination và Filters
     /// </summary>
-    public async Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 20)
+    public async Task<PagedResultDto<ProfileDto>> GetAllUsersAsProfileDtoAsync(int page = 1, int pageSize = 10, string? role = null, string? status = null)
     {
         try
         {
@@ -214,9 +214,30 @@ public class UserService : IUserService
 
             var query = _context.Users
                 .Include(u => u.Company)
-                .OrderByDescending(u => u.CreatedAt);
+                .AsQueryable();
 
-            // Count total items
+            // ✅ Apply filters BEFORE pagination
+            if (!string.IsNullOrEmpty(role))
+            {
+                query = query.Where(u => u.Role == role);
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status == "active")
+                {
+                    query = query.Where(u => u.IsActive);
+                }
+                else if (status == "inactive")
+                {
+                    query = query.Where(u => !u.IsActive);
+                }
+            }
+
+            // Order by CreatedAt
+            query = query.OrderByDescending(u => u.CreatedAt);
+
+            // Count total items AFTER filters
             var totalItems = await query.CountAsync();
 
             // Apply pagination
@@ -242,8 +263,8 @@ public class UserService : IUserService
                 CompanyLogoUrl = u.Company?.LogoUrl
             }).ToList();
 
-            _logger.LogInformation("Retrieved {Count}/{Total} users (page {Page})",
-                profileDtos.Count, totalItems, page);
+            _logger.LogInformation("Retrieved {Count}/{Total} users (page {Page}) with filters: role={Role}, status={Status}",
+                profileDtos.Count, totalItems, page, role ?? "all", status ?? "all");
 
             return new PagedResultDto<ProfileDto>
             {

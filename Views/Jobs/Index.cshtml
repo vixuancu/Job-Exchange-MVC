@@ -105,67 +105,14 @@
 
 @section Scripts {
     <script>
+        // ✅ DISABLED AJAX - Dùng normal form submission để pagination hoạt động
+        // AJAX search can break pagination, so we use standard form submission
+        
+        // Optional: Auto-submit on select change
         $(document).ready(function () {
-            let searchTimeout;
-
-            // Prevent form submission, use AJAX instead
-            $('#searchForm').on('submit', function (e) {
-                e.preventDefault();
-                performSearch();
+            $('select[name="categoryId"]').on('change', function () {
+                $('#searchForm').submit();
             });
-
-            // AJAX search on input change with debounce
-            $('#searchForm input, #searchForm select').on('change keyup', function () {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(function () {
-                    performSearch();
-                }, 800); // 800ms debounce for better UX
-            });
-
-            function performSearch() {
-                // Show loading state
-                $('#jobsList').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Đang tìm kiếm...</span></div></div>');
-
-                const searchTerm = $('input[name="searchTerm"]').val();
-                const location = $('input[name="location"]').val();
-                const categoryId = $('select[name="categoryId"]').val();
-
-                $.ajax({
-                    url: '@Url.Action("SearchPartial", "Jobs")',
-                    type: 'GET',
-                    data: {
-                        searchTerm: searchTerm,
-                        location: location,
-                        categoryId: categoryId
-                    },
-                    success: function (data) {
-                        $('#jobsList').html(data);
-
-                        // Update result count
-                        const jobCount = $('#jobsList .job-card').length;
-                        if (jobCount > 0) {
-                            $('#resultsCount').html('<span>Tìm thấy <strong>' + jobCount + '</strong> việc làm</span>');
-                        } else {
-                            $('#resultsCount').html('<span>Không tìm thấy việc làm phù hợp</span>');
-                        }
-
-                        // Update URL without page reload
-                        const params = new URLSearchParams();
-                        if (searchTerm) params.set('searchTerm', searchTerm);
-                        if (location) params.set('location', location);
-                        if (categoryId) params.set('categoryId', categoryId);
-
-                        const newUrl = params.toString()
-                            ? window.location.pathname + '?' + params.toString()
-                            : window.location.pathname;
-
-                        window.history.pushState({}, '', newUrl);
-                    },
-                    error: function () {
-                        $('#jobsList').html('<div class="alert alert-danger">Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại!</div>');
-                    }
-                });
-            }
         });
     </script>
 }

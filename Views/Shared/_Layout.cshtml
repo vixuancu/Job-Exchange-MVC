@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
+
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
@@ -19,8 +21,8 @@
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <i class="fas fa-briefcase text-primary"></i> <strong>Sàn GD Việc Làm</strong>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
@@ -82,7 +84,8 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button"
+                                    data-bs-toggle="dropdown">
                                     <i class="fas fa-user-circle"></i> @User.Identity.Name
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -91,7 +94,9 @@
                                             <i class="fas fa-user"></i> Hồ sơ
                                         </a>
                                     </li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
                                     <li>
                                         <form asp-controller="Account" asp-action="Logout" method="post">
                                             <button type="submit" class="dropdown-item">
@@ -110,7 +115,8 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link btn btn-primary text-white ms-2" asp-controller="Account" asp-action="Register">
+                                <a class="nav-link btn btn-primary text-white ms-2" asp-controller="Account"
+                                    asp-action="Register">
                                     <i class="fas fa-user-plus"></i> Đăng ký
                                 </a>
                             </li>
@@ -120,7 +126,7 @@
             </div>
         </nav>
     </header>
-    
+
     <main>
         <div class="@(ViewData["ContainerClass"] ?? "container")">
             @RenderBody()
@@ -137,9 +143,12 @@
                 <div class="col-md-4">
                     <h6>Liên kết</h6>
                     <ul class="list-unstyled small">
-                        <li><a asp-controller="Home" asp-action="About" class="text-muted text-decoration-none">Giới thiệu</a></li>
-                        <li><a asp-controller="Home" asp-action="Contact" class="text-muted text-decoration-none">Liên hệ</a></li>
-                        <li><a asp-controller="Home" asp-action="Privacy" class="text-muted text-decoration-none">Chính sách bảo mật</a></li>
+                        <li><a asp-controller="Home" asp-action="About" class="text-muted text-decoration-none">Giới
+                                thiệu</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact" class="text-muted text-decoration-none">Liên
+                                hệ</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy" class="text-muted text-decoration-none">Chính
+                                sách bảo mật</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -163,4 +172,5 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
+
 </html>

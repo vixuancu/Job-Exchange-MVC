@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Danh sách ứng viên";
     var job = ViewBag.Job as JobExchangeMvc.DTOs.JobDto;
+    var pagedResult = ViewBag.PagedResult as JobExchangeMvc.DTOs.PagedResultDto<JobExchangeMvc.DTOs.ApplicationDto>;
+    var totalApplicants = pagedResult?.TotalItems ?? Model.Count();
 }
 
 <div class="mb-4">
@@ -34,7 +36,7 @@
                 <div class="col-md-4 text-md-end">
                     <div class="d-inline-block">
                         <div class="badge bg-info text-white fs-5 p-3">
-                            <i class="fas fa-users"></i> @Model.Count() ứng viên
+                            <i class="fas fa-users"></i> @totalApplicants ứng viên
                         </div>
                     </div>
                 </div>
@@ -82,8 +84,8 @@
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(application.CoverLetter))
                                     {
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                data-bs-toggle="modal" data-bs-target="#coverLetterModal-@application.Id">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                                            data-bs-target="#coverLetterModal-@application.Id">
                                             <i class="fas fa-eye"></i> Xem thư
                                         </button>
                                     }
@@ -134,43 +136,44 @@
                                     <div class="btn-group" role="group">
                                         @if (!string.IsNullOrWhiteSpace(application.CvUrl))
                                         {
-                                            <a href="@application.CvUrl" target="_blank" class="btn btn-sm btn-primary" title="Xem CV">
+                                            <a href="@application.CvUrl" target="_blank" class="btn btn-sm btn-primary"
+                                                title="Xem CV">
                                                 <i class="fas fa-file-pdf"></i>
                                             </a>
                                         }
-                                        
+
                                         @if (application.Status == "Pending")
                                         {
-                                            <button type="button" class="btn btn-sm btn-success" 
-                                                    onclick="updateStatus(@application.Id, 'Approved')" title="Duyệt hồ sơ">
+                                            <button type="button" class="btn btn-sm btn-success"
+                                                onclick="updateStatus(@application.Id, 'Approved')" title="Duyệt hồ sơ">
                                                 <i class="fas fa-check"></i> Duyệt
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Từ chối">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="updateStatus(@application.Id, 'Rejected')" title="Từ chối">
                                                 <i class="fas fa-times"></i> Từ chối
                                             </button>
                                         }
-                                        
+
                                         @if (application.Status == "Approved")
                                         {
-                                            <button type="button" class="btn btn-sm btn-info" 
-                                                    onclick="updateStatus(@application.Id, 'Interviewing')" title="Mời phỏng vấn">
+                                            <button type="button" class="btn btn-sm btn-info"
+                                                onclick="updateStatus(@application.Id, 'Interviewing')" title="Mời phỏng vấn">
                                                 <i class="fas fa-handshake"></i> Mời PV
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
                                                 <i class="fas fa-times"></i> Không tuyển
                                             </button>
                                         }
-                                        
+
                                         @if (application.Status == "Interviewing")
                                         {
-                                            <button type="button" class="btn btn-sm btn-success" 
-                                                    onclick="updateStatus(@application.Id, 'Accepted')" title="Tuyển dụng">
+                                            <button type="button" class="btn btn-sm btn-success"
+                                                onclick="updateStatus(@application.Id, 'Accepted')" title="Tuyển dụng">
                                                 <i class="fas fa-user-check"></i> Tuyển dụng
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="updateStatus(@application.Id, 'Rejected')" title="Không tuyển">
                                                 <i class="fas fa-times"></i> Không tuyển
                                             </button>
                                         }
@@ -181,21 +184,24 @@
                             <!-- Cover Letter Modal -->
                             @if (!string.IsNullOrWhiteSpace(application.CoverLetter))
                             {
-                                <div class="modal fade" id="coverLetterModal-@application.Id" tabindex="-1" 
-                                     aria-labelledby="coverLetterModalLabel-@application.Id" aria-hidden="true">
+                                <div class="modal fade" id="coverLetterModal-@application.Id" tabindex="-1"
+                                    aria-labelledby="coverLetterModalLabel-@application.Id" aria-hidden="true">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="coverLetterModalLabel-@application.Id">
-                                                    <i class="fas fa-envelope-open-text"></i> Thư xin việc - @application.ApplicantName
+                                                    <i class="fas fa-envelope-open-text"></i> Thư xin việc -
+                                                    @application.ApplicantName
                                                 </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <p style="white-space: pre-wrap;">@application.CoverLetter</p>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Đóng</button>
                                             </div>
                                         </div>
                                     </div>
@@ -207,6 +213,25 @@
             </div>
         </div>
     </div>
+
+    <!-- ✅ Pagination Controls -->
+    @if (pagedResult != null)
+    {
+        <div class="mt-4">
+            @if (pagedResult.TotalPages > 1)
+            {
+                @await Html.PartialAsync("_PaginationPartial", pagedResult)
+            }
+            else
+            {
+                <div class="text-center text-muted">
+                    <small>
+                        Hiển thị tất cả <strong>@pagedResult.TotalItems</strong> ứng viên
+                    </small>
+                </div>
+            }
+        </div>
+    }
 }
 else
 {
@@ -221,7 +246,7 @@ else
     <script>
         function updateStatus(applicationId, status) {
             let confirmMessage = '';
-            switch(status) {
+            switch (status) {
                 case 'Approved':
                     confirmMessage = 'Bạn có chắc chắn muốn duyệt hồ sơ này?';
                     break;
@@ -245,10 +270,10 @@ else
                         status: status,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
-                    success: function(response) {
+                    success: function (response) {
                         location.reload();
                     },
-                    error: function() {
+                    error: function () {
                         alert('Có lỗi xảy ra. Vui lòng thử lại!');
                     }
                 });

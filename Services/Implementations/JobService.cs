@@ -111,11 +111,11 @@ public class JobService : IJobService
     }
 
     /// <summary>
-    /// ✅ Admin: Lấy Jobs ĐANG HOẠT ĐỘNG (IsActive = true) với Pagination
+    /// ✅ Admin: Lấy Jobs ĐANG HOẠT ĐỘNG (IsActive = true) với Pagination và Filter
     /// Bao gồm tất cả Status: Pending, Approved, Rejected, Closed, Expired
     /// Loại trừ: Jobs đã bị soft delete (IsActive = false)
     /// </summary>
-    public async Task<PagedResultDto<JobDto>> GetAllJobsForAdminAsync(int page = 1, int pageSize = 20)
+    public async Task<PagedResultDto<JobDto>> GetAllJobsForAdminAsync(int page = 1, int pageSize = 20, string? status = null)
     {
         try
         {
@@ -127,9 +127,16 @@ public class JobService : IJobService
             var query = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Category)
-                .Where(j => j.IsActive); // ✅ FIX #1: Chỉ lấy jobs đang active (mặc định)
+                .Where(j => j.IsActive) // ✅ Chỉ lấy jobs đang active
+                .AsQueryable();
 
-            // Count total items
+            // ✅ Apply status filter BEFORE pagination
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(j => j.Status == status);
+            }
+
+            // Count total items AFTER filters
             var totalItems = await query.CountAsync();
 
             // Apply pagination
@@ -161,8 +168,8 @@ public class JobService : IJobService
                 })
                 .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count}/{Total} active jobs for admin (page {Page})",
-                jobs.Count, totalItems, page);
+            _logger.LogInformation("Retrieved {Count}/{Total} active jobs for admin (page {Page}) with status filter: {Status}",
+                jobs.Count, totalItems, page, status ?? "all");
 
             return new PagedResultDto<JobDto>
             {
@@ -270,6 +277,17 @@ public class JobService : IJobService
             if (job == null)
             {
                 return null;
+            }
+
+            // ✅ FIX #2: Auto-expire job if deadline passed
+            if (job.ApplicationDeadline.HasValue &&
+                job.ApplicationDeadline.Value < DateTime.UtcNow &&
+                job.Status == "Approved")
+            {
+                job.Status = "Expired";
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Auto-expired job {JobId} (Deadline: {Deadline})",
+                    job.Id, job.ApplicationDeadline.Value);
             }
 
             return new JobDto
@@ -475,6 +493,43 @@ public class JobService : IJobService
         }
     }
 
+    /// <summary>
+    /// ✅ NEW: Admin hard delete job - XÓA HẲN khỏi database
+    /// Chỉ dành cho Admin, xóa vĩnh viễn job và tất cả applications liên quan
+    /// </summary>
+    public async Task<bool> HardDeleteJobAsync(int jobId)
+    {
+        try
+        {
+            var job = await _context.Jobs
+                .Include(j => j.Applications) // Load applications để cascade delete
+                .Include(j => j.Company)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (job == null)
+            {
+                _logger.LogWarning("Job {JobId} not found for hard delete", jobId);
+                return false;
+            }
+
+            // Log before delete
+            _logger.LogWarning("HARD DELETE: Removing job {JobId} '{Title}' from database. Company: {CompanyName}, Applications: {AppCount}",
+                job.Id, job.Title, job.Company?.Name, job.Applications.Count);
+
+            // Remove from database (cascade delete applications)
+            _context.Jobs.Remove(job);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Job {JobId} permanently deleted from database", jobId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard deleting job {JobId}", jobId);
+            return false;
+        }
+    }
+
     public async Task<IEnumerable<JobDto>> GetJobsByEmployerAsync(int employerId)
     {
         try
@@ -515,6 +570,81 @@ public class JobService : IJobService
         {
             _logger.LogError(ex, "Error getting jobs for employer {EmployerId}", employerId);
             return new List<JobDto>();
+        }
+    }
+
+    /// <summary>
+    /// ✅ NEW: Get jobs by employer with pagination
+    /// </summary>
+    public async Task<PagedResultDto<JobDto>> GetJobsByEmployerWithPaginationAsync(int employerId, int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var query = _context.Jobs
+                .Include(j => j.Company)
+                .Include(j => j.Category)
+                .Include(j => j.Applications)
+                .Where(j => j.Company.EmployerId == employerId && j.IsActive)
+                .AsQueryable();
+
+            // Count total items
+            var totalItems = await query.CountAsync();
+
+            // Apply pagination
+            var jobs = await query
+                .OrderByDescending(j => j.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(j => new JobDto
+                {
+                    Id = j.Id,
+                    Title = j.Title,
+                    Description = j.Description,
+                    Requirements = j.Requirements,
+                    Benefits = j.Benefits,
+                    SalaryRange = j.SalaryRange,
+                    Location = j.Location,
+                    JobType = j.JobType,
+                    NumberOfPositions = j.NumberOfPositions,
+                    ApplicationDeadline = j.ApplicationDeadline,
+                    Status = j.Status,
+                    ViewCount = j.ViewCount,
+                    CompanyId = j.CompanyId,
+                    CompanyName = j.Company.Name,
+                    CategoryId = j.CategoryId,
+                    CategoryName = j.Category.Name,
+                    CreatedAt = j.CreatedAt,
+                    IsActive = j.IsActive,
+                    ApplicationsCount = j.Applications.Count
+                })
+                .ToListAsync();
+
+            _logger.LogInformation("Retrieved {Count}/{Total} jobs for employer {EmployerId} (page {Page})",
+                jobs.Count, totalItems, employerId, page);
+
+            return new PagedResultDto<JobDto>
+            {
+                Items = jobs,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = totalItems
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting jobs with pagination for employer {EmployerId}", employerId);
+            return new PagedResultDto<JobDto>
+            {
+                Items = new List<JobDto>(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = 0
+            };
         }
     }
 
@@ -617,7 +747,11 @@ public class JobService : IJobService
         }
     }
 
-    public async Task<bool> IncrementViewCountAsync(int jobId)
+    /// <summary>
+    /// ✅ FIX #14: Increment view count with unique tracking
+    /// Only count if user hasn't viewed in last 24 hours
+    /// </summary>
+    public async Task<bool> IncrementViewCountAsync(int jobId, int? userId = null, string? ipAddress = null, string? userAgent = null)
     {
         try
         {
@@ -627,14 +761,112 @@ public class JobService : IJobService
                 return false;
             }
 
-            job.ViewCount++;
-            await _context.SaveChangesAsync();
-            return true;
+            var cutoffTime = DateTime.UtcNow.AddHours(-24);
+
+            // Check if this user/IP already viewed in last 24h
+            bool alreadyViewed;
+
+            if (userId.HasValue)
+            {
+                // Logged-in user: Check by UserId
+                alreadyViewed = await _context.JobViews
+                    .AnyAsync(jv => jv.JobId == jobId &&
+                                   jv.UserId == userId.Value &&
+                                   jv.ViewedAt > cutoffTime);
+            }
+            else if (!string.IsNullOrEmpty(ipAddress))
+            {
+                // Anonymous user: Check by IP
+                alreadyViewed = await _context.JobViews
+                    .AnyAsync(jv => jv.JobId == jobId &&
+                                   jv.IpAddress == ipAddress &&
+                                   jv.ViewedAt > cutoffTime);
+            }
+            else
+            {
+                // No tracking info: Don't count
+                _logger.LogWarning("IncrementViewCount called without userId or ipAddress for job {JobId}", jobId);
+                return false;
+            }
+
+            if (!alreadyViewed)
+            {
+                // Record new view
+                var jobView = new JobView
+                {
+                    JobId = jobId,
+                    UserId = userId,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent,
+                    ViewedAt = DateTime.UtcNow
+                };
+
+                await _context.JobViews.AddAsync(jobView);
+
+                // Increment counter
+                job.ViewCount++;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Counted new view for job {JobId} (UserId: {UserId}, IP: {IP})",
+                    jobId, userId, ipAddress?.Substring(0, Math.Min(ipAddress.Length, 10)));
+
+                return true;
+            }
+            else
+            {
+                _logger.LogDebug("Skip counting duplicate view for job {JobId} (UserId: {UserId}, IP: {IP})",
+                    jobId, userId, ipAddress?.Substring(0, Math.Min(ipAddress.Length, 10)));
+
+                return false;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error incrementing view count for job {JobId}", jobId);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// ✅ FIX #2: Batch expire all jobs past ApplicationDeadline
+    /// Call this periodically (e.g., daily) or when needed
+    /// </summary>
+    public async Task<int> ExpireJobsPastDeadlineAsync()
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+
+            var jobsToExpire = await _context.Jobs
+                .Where(j => j.IsActive &&
+                           j.Status == "Approved" &&
+                           j.ApplicationDeadline.HasValue &&
+                           j.ApplicationDeadline.Value < now)
+                .ToListAsync();
+
+            if (jobsToExpire.Count == 0)
+            {
+                _logger.LogInformation("No jobs to expire");
+                return 0;
+            }
+
+            foreach (var job in jobsToExpire)
+            {
+                job.Status = "Expired";
+                _logger.LogInformation("Expired job {JobId} '{Title}' (Deadline: {Deadline})",
+                    job.Id, job.Title, job.ApplicationDeadline);
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Expired {Count} jobs past deadline", jobsToExpire.Count);
+            return jobsToExpire.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error expiring jobs past deadline");
+            return 0;
         }
     }
 
