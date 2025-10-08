@@ -124,10 +124,22 @@ public class AdminController : Controller
 
         if (!result)
         {
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Không thể cập nhật trạng thái người dùng" });
+            }
+
             TempData["ErrorMessage"] = "Không thể cập nhật trạng thái người dùng";
         }
         else
         {
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = $"Đã {(isActive ? "kích hoạt" : "khóa")} tài khoản thành công!" });
+            }
+
             TempData["SuccessMessage"] = $"Đã {(isActive ? "kích hoạt" : "khóa")} tài khoản thành công!";
         }
 
@@ -278,16 +290,36 @@ public class AdminController : Controller
         {
             if (string.IsNullOrWhiteSpace(name))
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Tên danh mục không được để trống" });
+                }
+
                 TempData["ErrorMessage"] = "Tên danh mục không được để trống";
                 return RedirectToAction("Categories");
             }
 
             await _jobService.CreateCategoryAsync(name, description);
+
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Thêm danh mục thành công!" });
+            }
+
             TempData["SuccessMessage"] = "Thêm danh mục thành công!";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating category");
+
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi thêm danh mục" });
+            }
+
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi thêm danh mục";
         }
 
@@ -303,6 +335,12 @@ public class AdminController : Controller
         {
             if (string.IsNullOrWhiteSpace(name))
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Tên danh mục không được để trống" });
+                }
+
                 TempData["ErrorMessage"] = "Tên danh mục không được để trống";
                 return RedirectToAction("Categories");
             }
@@ -311,16 +349,35 @@ public class AdminController : Controller
 
             if (result)
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "Cập nhật danh mục thành công!" });
+                }
+
                 TempData["SuccessMessage"] = "Cập nhật danh mục thành công!";
             }
             else
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không tìm thấy danh mục" });
+                }
+
                 TempData["ErrorMessage"] = "Không tìm thấy danh mục";
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating category {CategoryId}", id);
+
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi cập nhật danh mục" });
+            }
+
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi cập nhật danh mục";
         }
 
@@ -338,16 +395,35 @@ public class AdminController : Controller
 
             if (result)
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = $"Đã {(isActive ? "kích hoạt" : "tạm dừng")} danh mục thành công!" });
+                }
+
                 TempData["SuccessMessage"] = $"Đã {(isActive ? "kích hoạt" : "tạm dừng")} danh mục thành công!";
             }
             else
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không tìm thấy danh mục" });
+                }
+
                 TempData["ErrorMessage"] = "Không tìm thấy danh mục";
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error toggling category status {CategoryId}", id);
+
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi thay đổi trạng thái danh mục" });
+            }
+
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi thay đổi trạng thái danh mục";
         }
 
@@ -385,16 +461,35 @@ public class AdminController : Controller
 
             if (expiredCount > 0)
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = $"Đã tự động đóng {expiredCount} tin tuyển dụng quá hạn!", count = expiredCount });
+                }
+
                 TempData["SuccessMessage"] = $"Đã tự động đóng {expiredCount} tin tuyển dụng quá hạn!";
             }
             else
             {
+                // Check if AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "Không có tin tuyển dụng nào quá hạn.", count = 0 });
+                }
+
                 TempData["InfoMessage"] = "Không có tin tuyển dụng nào quá hạn.";
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error expiring jobs");
+
+            // Check if AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi đóng tin tuyển dụng quá hạn" });
+            }
+
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi đóng tin tuyển dụng quá hạn";
         }
 
@@ -412,17 +507,37 @@ public class AdminController : Controller
 
             if (result)
             {
-                TempData["SuccessMessage"] = "Đã xóa vĩnh viễn tin tuyển dụng khỏi hệ thống!";
                 _logger.LogInformation("Admin hard deleted job {JobId}", jobId);
+
+                // Check if it's AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "Đã xóa vĩnh viễn tin tuyển dụng khỏi hệ thống!" });
+                }
+
+                TempData["SuccessMessage"] = "Đã xóa vĩnh viễn tin tuyển dụng khỏi hệ thống!";
             }
             else
             {
+                // Check if it's AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không tìm thấy tin tuyển dụng để xóa" });
+                }
+
                 TempData["ErrorMessage"] = "Không tìm thấy tin tuyển dụng để xóa";
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error hard deleting job {JobId}", jobId);
+
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra khi xóa tin tuyển dụng!" });
+            }
+
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa tin tuyển dụng!";
         }
 

@@ -243,6 +243,7 @@ else
 }
 
 @section Scripts {
+    @Html.AntiForgeryToken()
     <script>
         function updateStatus(applicationId, status) {
             let confirmMessage = '';
@@ -270,8 +271,16 @@ else
                         status: status,
                         __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                     },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     success: function (response) {
-                        location.reload();
+                        if (response.success) {
+                            alert(response.message);
+                            location.reload();
+                        } else {
+                            alert(response.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
+                        }
                     },
                     error: function () {
                         alert('Có lỗi xảy ra. Vui lòng thử lại!');

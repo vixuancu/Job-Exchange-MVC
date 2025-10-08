@@ -9,14 +9,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-briefcase"></i> Quản lý tin tuyển dụng</h2>
 
-        <!-- ✅ FIX #2: Button trigger batch expire -->
-        <form method="post" asp-action="ExpireJobs"
-            onsubmit="return confirm('Tự động đóng tất cả tin tuyển dụng quá hạn?');">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-warning">
-                <i class="fas fa-clock"></i> Đóng tin quá hạn
-            </button>
-        </form>
+        <!-- ✅ FIX #2: Button trigger batch expire with AJAX -->
+        <button type="button" class="btn btn-warning" onclick="expireJobs()">
+            <i class="fas fa-clock"></i> Đóng tin quá hạn
+        </button>
     </div>
 
     <!-- Filter -->
@@ -103,33 +99,21 @@
                                 <td>
                                     @if (job.Status == "Pending")
                                     {
-                                        <form asp-action="ApproveJob" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="jobId" value="@job.Id" />
-                                            <button type="submit" class="btn btn-success btn-sm"
-                                                onclick="return confirm('Xác nhận duyệt tin này?')">
-                                                <i class="fas fa-check"></i> Duyệt
-                                            </button>
-                                        </form>
-                                        <form asp-action="RejectJob" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="jobId" value="@job.Id" />
-                                            <button type="submit" class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Xác nhận từ chối tin này?')">
-                                                <i class="fas fa-times"></i> Từ chối
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-success btn-sm"
+                                            onclick="approveJob(@job.Id, '@job.Title')">
+                                            <i class="fas fa-check"></i> Duyệt
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                            onclick="rejectJob(@job.Id, '@job.Title')">
+                                            <i class="fas fa-times"></i> Từ chối
+                                        </button>
                                     }
 
-                                    <!-- ✅ NEW: Hard Delete Button (Admin only) -->
-                                    <form asp-action="HardDeleteJob" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="jobId" value="@job.Id" />
-                                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                            onclick="return confirm('⚠️ CẢNH BÁO: Xóa vĩnh viễn tin này khỏi database?\n\nHành động này KHÔNG THỂ HOÀN TÁC!\n\n✅ Xác nhận xóa?')">
-                                            <i class="fas fa-trash-alt"></i> Xóa
-                                        </button>
-                                    </form>
+                                    <!-- ✅ Hard Delete Button -->
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                        onclick="hardDeleteJob(@job.Id, '@job.Title')">
+                                        <i class="fas fa-trash-alt"></i> Xóa
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -168,10 +152,155 @@
 </div>
 
 @section Scripts {
+    @Html.AntiForgeryToken()
     <script>
         // Auto reload on status change
         document.querySelector('select[name="status"]').addEventListener('change', function () {
             this.form.submit();
         });
+
+        function expireJobs() {
+            if (!confirm('Tự động đóng tất cả tin tuyển dụng quá hạn?')) {
+                return;
+            }
+
+            var button = event.target;
+            var originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+
+            $.ajax({
+                url: '@Url.Action("ExpireJobs", "Admin")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                        if (response.count > 0) {
+                            location.reload();
+                        } else {
+                            button.disabled = false;
+                            button.innerHTML = originalHtml;
+                        }
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        button.disabled = false;
+                        button.innerHTML = originalHtml;
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi đóng tin tuyển dụng quá hạn!');
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            });
+        }
+
+        function approveJob(jobId, jobTitle) {
+            if (!confirm('Bạn có chắc muốn duyệt công việc: ' + jobTitle + '?')) {
+                return;
+            }
+
+            var button = event.target;
+            button.disabled = true;
+            button.textContent = 'Đang xử lý...';
+
+            $.ajax({
+                url: '@Url.Action("ApproveJob", "Admin")',
+                type: 'POST',
+                data: {
+                    id: jobId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Duyệt công việc thành công!');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        button.disabled = false;
+                        button.textContent = 'Duyệt';
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi duyệt công việc!');
+                    button.disabled = false;
+                    button.textContent = 'Duyệt';
+                }
+            });
+        }
+
+        function rejectJob(jobId, jobTitle) {
+            if (!confirm('Bạn có chắc muốn từ chối công việc: ' + jobTitle + '?')) {
+                return;
+            }
+
+            var button = event.target;
+            button.disabled = true;
+            button.textContent = 'Đang xử lý...';
+
+            $.ajax({
+                url: '@Url.Action("RejectJob", "Admin")',
+                type: 'POST',
+                data: {
+                    id: jobId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Từ chối công việc thành công!');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        button.disabled = false;
+                        button.textContent = 'Từ chối';
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi từ chối công việc!');
+                    button.disabled = false;
+                    button.textContent = 'Từ chối';
+                }
+            });
+        }
+
+        function hardDeleteJob(jobId, jobTitle) {
+            if (!confirm('⚠️ CẢNH BÁO: Xóa vĩnh viễn công việc: ' + jobTitle + '?\n\nHành động này KHÔNG THỂ KHÔI PHỤC!')) {
+                return;
+            }
+
+            var button = event.target;
+            button.disabled = true;
+            button.textContent = 'Đang xóa...';
+
+            $.ajax({
+                url: '@Url.Action("HardDeleteJob", "Admin")',
+                type: 'POST',
+                data: {
+                    id: jobId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Xóa công việc thành công!');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        button.disabled = false;
+                        button.textContent = 'Xóa';
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi xóa công việc!');
+                    button.disabled = false;
+                    button.textContent = 'Xóa';
+                }
+            });
+        }
     </script>
 }

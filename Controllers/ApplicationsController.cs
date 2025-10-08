@@ -160,10 +160,22 @@ public class ApplicationsController : Controller
 
         if (!result)
         {
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Không thể hủy đơn ứng tuyển" });
+            }
+
             TempData["ErrorMessage"] = "Không thể hủy đơn ứng tuyển";
         }
         else
         {
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Hủy đơn ứng tuyển thành công!" });
+            }
+
             TempData["SuccessMessage"] = "Hủy đơn ứng tuyển thành công!";
         }
 
@@ -180,10 +192,22 @@ public class ApplicationsController : Controller
 
         if (!result)
         {
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = false, message = "Không thể cập nhật trạng thái đơn ứng tuyển" });
+            }
+
             TempData["ErrorMessage"] = "Không thể cập nhật trạng thái đơn ứng tuyển";
         }
         else
         {
+            // Check if it's AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Cập nhật trạng thái thành công!" });
+            }
+
             TempData["SuccessMessage"] = "Cập nhật trạng thái thành công!";
         }
 

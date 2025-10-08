@@ -131,27 +131,17 @@
                                     {
                                         @if (user.IsActive)
                                         {
-                                            <form asp-action="UpdateUserStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="userId" value="@user.Id" />
-                                                <input type="hidden" name="isActive" value="false" />
-                                                <button type="submit" class="btn btn-warning btn-sm"
-                                                    onclick="return confirm('Xác nhận khóa tài khoản này?')">
-                                                    <i class="fas fa-lock"></i> Khóa
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-warning btn-sm" 
+                                                    onclick="toggleUserStatus(@user.Id, false, '@user.FullName')">
+                                                <i class="fas fa-lock"></i> Khóa
+                                            </button>
                                         }
                                         else
                                         {
-                                            <form asp-action="UpdateUserStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="userId" value="@user.Id" />
-                                                <input type="hidden" name="isActive" value="true" />
-                                                <button type="submit" class="btn btn-success btn-sm"
-                                                    onclick="return confirm('Xác nhận mở khóa tài khoản này?')">
-                                                    <i class="fas fa-unlock"></i> Mở khóa
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-success btn-sm"
+                                                    onclick="toggleUserStatus(@user.Id, true, '@user.FullName')">
+                                                <i class="fas fa-unlock"></i> Mở khóa
+                                            </button>
                                         }
                                     }
                                 </td>
@@ -190,3 +180,44 @@
         </div>
     }
 </div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        // ✅ AJAX Toggle User Status
+        function toggleUserStatus(userId, isActive, userName) {
+            const action = isActive ? 'mở khóa' : 'khóa';
+            const confirmMsg = `Xác nhận ${action} tài khoản "${userName}"?`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            // Disable button để tránh double-click
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+            
+            $.ajax({
+                url: '@Url.Action("UpdateUserStatus", "Admin")',
+                type: 'POST',
+                data: {
+                    userId: userId,
+                    isActive: isActive,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    // Reload page để cập nhật UI
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    alert('Có lỗi xảy ra khi cập nhật trạng thái người dùng!');
+                    // Restore button
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            });
+        }
+    </script>
+}

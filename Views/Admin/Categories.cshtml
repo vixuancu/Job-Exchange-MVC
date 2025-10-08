@@ -40,28 +40,26 @@
                                 <span class="badge bg-secondary">Tạm dừng</span>
                             }
                         </div>
-                        
+
                         @if (!string.IsNullOrEmpty(category.Description))
                         {
                             <p class="text-muted small mb-3">@category.Description</p>
                         }
-                        
+
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary flex-fill" 
-                                    onclick="editCategory(@category.Id, '@category.Name', '@category.Description', @category.IsActive.ToString().ToLower())">
+                            <button class="btn btn-sm btn-outline-primary flex-fill"
+                                onclick="editCategory(@category.Id, '@category.Name', '@category.Description', @category.IsActive.ToString().ToLower())">
                                 <i class="fas fa-edit"></i> Sửa
                             </button>
                             @if (category.IsActive)
                             {
-                                <button class="btn btn-sm btn-outline-warning" 
-                                        onclick="toggleCategory(@category.Id, false)">
+                                <button class="btn btn-sm btn-outline-warning" onclick="toggleCategory(@category.Id, false)">
                                     <i class="fas fa-pause"></i>
                                 </button>
                             }
                             else
                             {
-                                <button class="btn btn-sm btn-outline-success" 
-                                        onclick="toggleCategory(@category.Id, true)">
+                                <button class="btn btn-sm btn-outline-success" onclick="toggleCategory(@category.Id, true)">
                                     <i class="fas fa-play"></i>
                                 </button>
                             }
@@ -130,7 +128,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Mô tả</label>
-                        <textarea name="description" id="editCategoryDescription" class="form-control" rows="3"></textarea>
+                        <textarea name="description" id="editCategoryDescription" class="form-control"
+                            rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -151,44 +150,121 @@
 </div>
 
 @section Scripts {
+    @Html.AntiForgeryToken()
     <script>
         function editCategory(id, name, description, isActive) {
             document.getElementById('editCategoryId').value = id;
             document.getElementById('editCategoryName').value = name;
             document.getElementById('editCategoryDescription').value = description || '';
             document.getElementById('editCategoryIsActive').checked = isActive;
-            
+
             var modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
             modal.show();
         }
 
         function toggleCategory(id, isActive) {
-            if (confirm('Xác nhận thay đổi trạng thái danh mục này?')) {
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '@Url.Action("ToggleCategoryStatus")';
-                
-                var tokenInput = document.createElement('input');
-                tokenInput.type = 'hidden';
-                tokenInput.name = '__RequestVerificationToken';
-                tokenInput.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                form.appendChild(tokenInput);
-                
-                var idInput = document.createElement('input');
-                idInput.type = 'hidden';
-                idInput.name = 'id';
-                idInput.value = id;
-                form.appendChild(idInput);
-                
-                var activeInput = document.createElement('input');
-                activeInput.type = 'hidden';
-                activeInput.name = 'isActive';
-                activeInput.value = isActive;
-                form.appendChild(activeInput);
-                
-                document.body.appendChild(form);
-                form.submit();
+            var action = isActive ? 'kích hoạt' : 'tạm dừng';
+            if (!confirm('Xác nhận ' + action + ' danh mục này?')) {
+                return;
             }
+
+            var button = event.target.closest('button');
+            var originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            $.ajax({
+                url: '@Url.Action("ToggleCategoryStatus", "Admin")',
+                type: 'POST',
+                data: {
+                    id: id,
+                    isActive: isActive,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        button.disabled = false;
+                        button.innerHTML = originalHtml;
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi thay đổi trạng thái danh mục!');
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            });
         }
+
+        // AJAX for Create Category
+        $('#addCategoryModal form').on('submit', function (e) {
+            e.preventDefault();
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang xử lý...');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        submitBtn.prop('disabled', false).html(originalText);
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi thêm danh mục!');
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // AJAX for Update Category
+        $('#editCategoryModal form').on('submit', function (e) {
+            e.preventDefault();
+
+            var form = $(this);
+            var submitBtn = form.find('button[type="submit"]');
+            var originalText = submitBtn.html();
+
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang xử lý...');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + response.message);
+                        submitBtn.prop('disabled', false).html(originalText);
+                    }
+                },
+                error: function () {
+                    alert('Có lỗi xảy ra khi cập nhật danh mục!');
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
     </script>
 }
