@@ -99,19 +99,19 @@
                                 <td>
                                     @if (job.Status == "Pending")
                                     {
-                                        <button type="button" class="btn btn-success btn-sm"
-                                            onclick="approveJob(@job.Id, '@job.Title')">
+                                        <button type="button" class="btn btn-success btn-sm" data-job-id="@job.Id"
+                                            data-job-title="@job.Title" onclick="approveJob(this)">
                                             <i class="fas fa-check"></i> Duyệt
                                         </button>
-                                        <button type="button" class="btn btn-danger btn-sm"
-                                            onclick="rejectJob(@job.Id, '@job.Title')">
+                                        <button type="button" class="btn btn-danger btn-sm" data-job-id="@job.Id"
+                                            data-job-title="@job.Title" onclick="rejectJob(this)">
                                             <i class="fas fa-times"></i> Từ chối
                                         </button>
                                     }
 
                                     <!-- ✅ Hard Delete Button -->
-                                    <button type="button" class="btn btn-outline-danger btn-sm"
-                                        onclick="hardDeleteJob(@job.Id, '@job.Title')">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-job-id="@job.Id"
+                                        data-job-title="@job.Title" onclick="hardDeleteJob(this)">
                                         <i class="fas fa-trash-alt"></i> Xóa
                                     </button>
                                 </td>
@@ -201,12 +201,22 @@
             });
         }
 
-        function approveJob(jobId, jobTitle) {
+        function approveJob(button) {
+            // ✅ FIX: Get jobId and jobTitle from data attributes
+            var jobId = parseInt($(button).data('job-id'));
+            var jobTitle = $(button).data('job-title');
+
+            console.log('approveJob called with:', { jobId: jobId, jobTitle: jobTitle });
+
+            if (!jobId || jobId === 0) {
+                alert('Lỗi: Không tìm thấy ID công việc!');
+                return;
+            }
+
             if (!confirm('Bạn có chắc muốn duyệt công việc: ' + jobTitle + '?')) {
                 return;
             }
 
-            var button = event.target;
             button.disabled = true;
             button.textContent = 'Đang xử lý...';
 
@@ -214,7 +224,7 @@
                 url: '@Url.Action("ApproveJob", "Admin")',
                 type: 'POST',
                 data: {
-                    id: jobId,
+                    jobId: jobId,
                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 },
                 success: function (response) {
@@ -235,12 +245,22 @@
             });
         }
 
-        function rejectJob(jobId, jobTitle) {
+        function rejectJob(button) {
+            // ✅ FIX: Get jobId and jobTitle from data attributes
+            var jobId = parseInt($(button).data('job-id'));
+            var jobTitle = $(button).data('job-title');
+
+            console.log('rejectJob called with:', { jobId: jobId, jobTitle: jobTitle });
+
+            if (!jobId || jobId === 0) {
+                alert('Lỗi: Không tìm thấy ID công việc!');
+                return;
+            }
+
             if (!confirm('Bạn có chắc muốn từ chối công việc: ' + jobTitle + '?')) {
                 return;
             }
 
-            var button = event.target;
             button.disabled = true;
             button.textContent = 'Đang xử lý...';
 
@@ -248,7 +268,7 @@
                 url: '@Url.Action("RejectJob", "Admin")',
                 type: 'POST',
                 data: {
-                    id: jobId,
+                    jobId: jobId,
                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 },
                 success: function (response) {
@@ -269,12 +289,22 @@
             });
         }
 
-        function hardDeleteJob(jobId, jobTitle) {
+        function hardDeleteJob(button) {
+            // ✅ FIX: Get jobId and jobTitle from data attributes
+            var jobId = parseInt($(button).data('job-id'));
+            var jobTitle = $(button).data('job-title');
+
+            console.log('hardDeleteJob called with:', { jobId: jobId, jobTitle: jobTitle });
+
+            if (!jobId || jobId === 0) {
+                alert('Lỗi: Không tìm thấy ID công việc!');
+                return;
+            }
+
             if (!confirm('⚠️ CẢNH BÁO: Xóa vĩnh viễn công việc: ' + jobTitle + '?\n\nHành động này KHÔNG THỂ KHÔI PHỤC!')) {
                 return;
             }
 
-            var button = event.target;
             button.disabled = true;
             button.textContent = 'Đang xóa...';
 
@@ -282,7 +312,7 @@
                 url: '@Url.Action("HardDeleteJob", "Admin")',
                 type: 'POST',
                 data: {
-                    id: jobId,
+                    jobId: jobId,
                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 },
                 success: function (response) {
