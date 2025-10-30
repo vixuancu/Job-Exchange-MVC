@@ -3,6 +3,7 @@ using JobExchangeMvc.Data;
 using JobExchangeMvc.Helpers;
 using JobExchangeMvc.Services.Interfaces;
 using JobExchangeMvc.Services.Implementations;
+using JobExchangeMvc.Middlewares; // ← ADD: Import Middlewares
 using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -90,12 +91,25 @@ app.UseRouting();
 // Sử dụng CORS
 app.UseCors("AllowSpecificOrigins");
 
+// ========================================
+// ✅ CUSTOM MIDDLEWARES (Thứ tự quan trọng!)
+// ========================================
+
+// 1. Request Logging - Log mọi request (đặt đầu tiên)
+app.UseRequestLogging();
+
 // Sử dụng Session
 app.UseSession();
+
+// 2. JWT Cookie - Lấy JWT từ cookie và set vào User (trước Authentication)
+app.UseJwtCookie();
 
 // Authentication & Authorization phải đúng thứ tự
 app.UseAuthentication();
 app.UseAuthorization();
+
+// 3. Role-based Access Control - Kiểm tra quyền truy cập (sau Authorization)
+app.UseRoleBasedAccess();
 
 app.MapControllerRoute(
     name: "default",
