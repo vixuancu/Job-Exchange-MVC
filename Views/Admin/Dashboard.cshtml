@@ -139,12 +139,13 @@
             <div class="card-body text-center">
                 <h2 class="text-success">@Model.ResponseRate%</h2>
                 <p class="text-muted mb-0">
-                    <small>@(Model.TotalApplications - Model.PendingApplications)/@Model.TotalApplications đơn đã xét</small>
+                    <small>@(Model.TotalApplications - Model.PendingApplications)/@Model.TotalApplications đơn đã
+                        xét</small>
                 </p>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -158,7 +159,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -201,7 +202,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -272,79 +273,12 @@
     .opacity-50 {
         opacity: 0.5;
     }
-    
+
     .card {
         transition: transform 0.2s;
     }
-    
+
     .card:hover {
         transform: translateY(-2px);
-    }
-</style>
-
-@section Scripts {
-    @Html.AntiForgeryToken()
-    <script>
-        function approveJob(jobId) {
-            if (confirm('Bạn có chắc chắn muốn duyệt tin tuyển dụng này?')) {
-                $.ajax({
-                    url: '@Url.Action("ApproveJob", "Admin")',
-                    type: 'POST',
-                    data: {
-                        jobId: jobId,
-                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message);
-                            location.reload();
-                        } else {
-                            alert(response.message || 'Có lỗi xảy ra!');
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('AJAX Error:', error);
-                        alert('Có lỗi xảy ra khi gọi server!');
-                    }
-                });
-            }
-        }
-
-        function rejectJob(jobId) {
-            if (confirm('Bạn có chắc chắn muốn từ chối tin tuyển dụng này?')) {
-                $.ajax({
-                    url: '@Url.Action("RejectJob", "Admin")',
-                    type: 'POST',
-                    data: {
-                        jobId: jobId,
-                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message);
-                            location.reload();
-                        } else {
-                            alert(response.message || 'Có lỗi xảy ra!');
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('AJAX Error:', error);
-                        alert('Có lỗi xảy ra khi gọi server!');
-                    }
-                });
-            }
-        }
-    </script>
-}
-
-<style>
-    .opacity-50 {
-        opacity: 0.5;
     }
 </style>
