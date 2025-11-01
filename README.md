@@ -1260,7 +1260,7 @@ This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
 
-**Nguyen Xuan Vinh**
+**Vi Xuân Cử**
 
 - GitHub: [@vixuancu](https://github.com/vixuancu)
 - Repository: [Job-Exchange-MVC](https://github.com/vixuancu/Job-Exchange-MVC)
