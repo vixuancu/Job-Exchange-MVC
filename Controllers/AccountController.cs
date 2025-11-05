@@ -170,7 +170,6 @@ public class AccountController : Controller
         {
             return NotFound();
         }
-
         return View(profile);
     }
 
