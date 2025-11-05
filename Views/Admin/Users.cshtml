@@ -62,103 +62,24 @@
         </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Họ tên</th>
-                            <th>Email</th>
-                            <th>Vai trò</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày tạo</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var user in Model)
-                        {
-                            <tr>
-                                <td>@user.Id</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        @if (!string.IsNullOrEmpty(user.AvatarUrl))
-                                        {
-                                            <img src="@user.AvatarUrl" alt="Avatar" class="rounded-circle me-2" width="32"
-                                                height="32">
-                                        }
-                                        else
-                                        {
-                                            <i class="fas fa-user-circle fa-2x me-2 text-muted"></i>
-                                        }
-                                        <span>@user.FullName</span>
-                                    </div>
-                                </td>
-                                <td>@user.Email</td>
-                                <td>
-                                    @switch (user.Role)
-                                    {
-                                        case "Admin":
-                                            <span class="badge bg-danger">Admin</span>
-                                            break;
-                                        case "Employer":
-                                            <span class="badge bg-primary">Nhà tuyển dụng</span>
-                                            break;
-                                        case "Applicant":
-                                            <span class="badge bg-success">Ứng viên</span>
-                                            break;
-                                        default:
-                                            <span class="badge bg-secondary">@user.Role</span>
-                                            break;
-                                    }
-                                </td>
-                                <td>
-                                    @if (user.IsActive)
-                                    {
-                                        <span class="badge bg-success">Hoạt động</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">Đã khóa</span>
-                                    }
-                                </td>
-                                <td>@user.CreatedAt.ToShortDateString()</td>
-                                <td>
-                                    @if (user.Role != "Admin")
-                                    {
-                                        @if (user.IsActive)
-                                        {
-                                            <button type="button" class="btn btn-warning btn-sm" 
-                                                    onclick="toggleUserStatus(@user.Id, false, '@user.FullName')">
-                                                <i class="fas fa-lock"></i> Khóa
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="button" class="btn btn-success btn-sm"
-                                                    onclick="toggleUserStatus(@user.Id, true, '@user.FullName')">
-                                                <i class="fas fa-unlock"></i> Mở khóa
-                                            </button>
-                                        }
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <!-- Users Grid (Responsive: 3 cols desktop, 1 col mobile) -->
+    <div class="row g-4 mb-4">
+        @foreach (var user in Model)
+        {
+            <div class="col-12 col-md-4">
+                <partial name="_UserCard" model="user" />
             </div>
-
-            @if (!Model.Any())
-            {
+        }
+        
+        @if (!Model.Any())
+        {
+            <div class="col-12">
                 <div class="text-center py-5">
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                     <p class="text-muted">Không có người dùng nào</p>
                 </div>
-            }
-        </div>
+            </div>
+        }
     </div>
 
     <!-- ✅ Pagination Controls -->
@@ -181,43 +102,10 @@
     }
 </div>
 
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
 @section Scripts {
     @Html.AntiForgeryToken()
-    <script>
-        // ✅ AJAX Toggle User Status
-        function toggleUserStatus(userId, isActive, userName) {
-            const action = isActive ? 'mở khóa' : 'khóa';
-            const confirmMsg = `Xác nhận ${action} tài khoản "${userName}"?`;
-            
-            if (!confirm(confirmMsg)) {
-                return;
-            }
-            
-            // Disable button để tránh double-click
-            const btn = event.target.closest('button');
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-            
-            $.ajax({
-                url: '@Url.Action("UpdateUserStatus", "Admin")',
-                type: 'POST',
-                data: {
-                    userId: userId,
-                    isActive: isActive,
-                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                },
-                success: function(response) {
-                    // Reload page để cập nhật UI
-                    location.reload();
-                },
-                error: function(xhr, status, error) {
-                    alert('Có lỗi xảy ra khi cập nhật trạng thái người dùng!');
-                    // Restore button
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                }
-            });
-        }
-    </script>
+    <script src="~/js/admin-users.js"></script>
 }

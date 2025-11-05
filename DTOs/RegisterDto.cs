@@ -25,4 +25,10 @@ public class RegisterDto
 
     [Required(ErrorMessage = "Vai trò là bắt buộc")]
     public string Role { get; set; } = "Applicant"; // Applicant or Employer
+
+    [Required(ErrorMessage = "VerifyKey là bắt buộc")]
+    [StringLength(10, MinimumLength = 10, ErrorMessage = "VerifyKey phải có đúng 10 ký tự")]
+    [RegularExpression(@"^\d.*", ErrorMessage = "VerifyKey phải bắt đầu bằng chữ số (0-9)")]
+    [Display(Name = "Mã xác minh")]
+    public string VerifyKey { get; set; } = string.Empty;
 }

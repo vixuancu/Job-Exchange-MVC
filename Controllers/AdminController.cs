@@ -15,17 +15,20 @@ public class AdminController : Controller
     private readonly IJobService _jobService;
     private readonly IApplicationService _applicationService;
     private readonly ILogger<AdminController> _logger;
+    private readonly IConfiguration _configuration;
 
     public AdminController(
         IUserService userService,
         IJobService jobService,
         IApplicationService applicationService,
-        ILogger<AdminController> logger)
+        ILogger<AdminController> logger,
+        IConfiguration configuration)
     {
         _userService = userService;
         _jobService = jobService;
         _applicationService = applicationService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     // GET: Admin/Dashboard
@@ -542,5 +545,42 @@ public class AdminController : Controller
         }
 
         return RedirectToAction("Jobs");
+    }
+
+    // POST: Admin/DecryptVerifyKey (AJAX)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DecryptVerifyKey(int id)
+    {
+        try
+        {
+            // Get user
+            var users = await _userService.GetAllUsersAsync();
+            var user = users.FirstOrDefault(u => u.Id == id);
+
+            if (user == null || string.IsNullOrEmpty(user.VerifyKey))
+            {
+                return Json(new { success = false, message = "Không tìm thấy user hoặc VerifyKey" });
+            }
+
+            // Decrypt VerifyKey
+            var encryptionKey = _configuration["VerifyKeyEncryption:Key"] ?? "DefaultKey32CharactersLong!!!";
+            var originalKey = Helpers.VerifyKeyEncryptor.Decrypt(user.VerifyKey, encryptionKey);
+
+            _logger.LogInformation("VerifyKey decrypted for user {UserId} by admin", id);
+
+            return Json(new
+            {
+                success = true,
+                encryptedKey = user.VerifyKey,
+                originalKey = originalKey,
+                message = "Giải mã thành công!"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error decrypting VerifyKey for user {UserId}", id);
+            return Json(new { success = false, message = "Lỗi khi giải mã: " + ex.Message });
+        }
     }
 }

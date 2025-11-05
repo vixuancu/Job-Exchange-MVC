@@ -59,6 +59,20 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label asp-for="VerifyKey" class="form-label">
+                            <i class="fas fa-key"></i> Mã xác minh <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="VerifyKey" class="form-control" placeholder="Ví dụ: 1ABC567890" maxlength="10" />
+                        <span asp-validation-for="VerifyKey" class="text-danger"></span>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-info"></i> 
+                            Phải có đúng <strong>10 ký tự</strong>, bắt đầu bằng <strong>chữ số</strong> (0-9)
+                            <br>
+                            <small class="text-muted">✅ Hợp lệ: 1ABC567890, 9XYZ123456 | ❌ Không hợp lệ: ABC1234567, 123456</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label asp-for="Role" class="form-label">
                             <i class="fas fa-user-tag"></i> Loại tài khoản <span class="text-danger">*</span>
                         </label>

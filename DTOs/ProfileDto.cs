@@ -26,6 +26,9 @@ public class ProfileDto
     [MaxLength(1000)]
     public string? Bio { get; set; }
 
+    // VerifyKey (encrypted in DB, shown as encrypted or decrypted)
+    public string? VerifyKey { get; set; }
+
     // For password change
     public string? CurrentPassword { get; set; }
 

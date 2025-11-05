@@ -12,15 +12,18 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly JwtTokenHelper _jwtTokenHelper;
     private readonly ILogger<AuthService> _logger;
+    private readonly IConfiguration _configuration;
 
     public AuthService(
         ApplicationDbContext context,
         JwtTokenHelper jwtTokenHelper,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IConfiguration configuration)
     {
         _context = context;
         _jwtTokenHelper = jwtTokenHelper;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
@@ -47,6 +50,10 @@ public class AuthService : IAuthService
                 };
             }
 
+            // Mã hóa VerifyKey trước khi lưu
+            var encryptionKey = _configuration["VerifyKeyEncryption:Key"] ?? "DefaultKey32CharactersLong!!!";
+            var encryptedVerifyKey = VerifyKeyEncryptor.Encrypt(registerDto.VerifyKey, encryptionKey);
+
             // Tạo user mới
             var user = new User
             {
@@ -55,6 +62,7 @@ public class AuthService : IAuthService
                 FullName = registerDto.FullName,
                 PhoneNumber = registerDto.PhoneNumber,
                 Role = registerDto.Role,
+                VerifyKey = encryptedVerifyKey,  // ← Lưu VerifyKey đã mã hóa
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };

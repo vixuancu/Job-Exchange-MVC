@@ -49,6 +49,14 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// VerifyKey - Mã xác minh (10 ký tự, bắt đầu bằng số, được mã hóa khi lưu DB)
+    /// </summary>
+    [Required(ErrorMessage = "VerifyKey là bắt buộc")]
+    [StringLength(255, ErrorMessage = "VerifyKey đã mã hóa không hợp lệ")]
+    [Display(Name = "Mã xác minh")]
+    public string? VerifyKey { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }

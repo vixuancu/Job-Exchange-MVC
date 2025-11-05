@@ -259,6 +259,7 @@ public class UserService : IUserService
                 Role = u.Role,
                 IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt,
+                VerifyKey = u.VerifyKey,  // ← Thêm VerifyKey (encrypted)
                 CompanyName = u.Company?.Name,
                 CompanyLogoUrl = u.Company?.LogoUrl
             }).ToList();
